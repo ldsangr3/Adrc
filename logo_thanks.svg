@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="210mm"
+   height="297mm"
+   viewBox="0 0 210 297"
+   version="1.1"
+   id="svg5"
+   inkscape:version="1.2 (dc2aedaf03, 2022-05-15)"
+   sodipodi:docname="logo_thanks.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview7"
+     pagecolor="#ffffff"
+     bordercolor="#999999"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showgrid="false"
+     inkscape:zoom="3.3638608"
+     inkscape:cx="228.01181"
+     inkscape:cy="97.804284"
+     inkscape:window-width="1600"
+     inkscape:window-height="1137"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs2" />
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <text
+       xml:space="preserve"
+       style="font-size:3.175px;line-height:3.4;white-space:pre;inline-size:55.3085;display:inline;fill:#000000;stroke-width:0.264583"
+       x="20.467146"
+       y="17.018875"
+       id="text63"
+       transform="translate(0,-10.46107)"><tspan
+         x="20.467146"
+         y="17.018875"
+         id="tspan872"><tspan
+           style="fill:#aa0000"
+           id="tspan868">Model-Free Control APP - 2022 (32  bits)</tspan><tspan
+           style="font-family:'Times New Roman';-inkscape-font-specification:'Times New Roman, '"
+           id="tspan870"> </tspan></tspan><tspan
+         x="20.467146"
+         y="27.892328"
+         id="tspan878"><tspan
+           style="fill:#000080"
+           id="tspan874">Current version 1.1</tspan><tspan
+           style="font-family:'Times New Roman';-inkscape-font-specification:'Times New Roman, '"
+           id="tspan876">
+</tspan></tspan><tspan
+         x="20.467146"
+         y="38.765783"
+         id="tspan882"><tspan
+           style="font-family:'Times New Roman';-inkscape-font-specification:'Times New Roman, '"
+           id="tspan880">
+</tspan></tspan><tspan
+         x="20.467146"
+         y="49.639234"
+         id="tspan886"><tspan
+           style="font-family:'Times New Roman';-inkscape-font-specification:'Times New Roman, '"
+           id="tspan884">
+</tspan></tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.175px;font-family:'Times New Roman';-inkscape-font-specification:'Times New Roman, ';fill:#000000;stroke-width:0.264583"
+       x="20.843483"
+       y="41.68697"
+       id="text408"><tspan
+         sodipodi:role="line"
+         id="tspan406"
+         style="stroke-width:0.264583"
+         x="20.843483"
+         y="41.68697">Contacto: Viyils sangregorio-soto</tspan><tspan
+         sodipodi:role="line"
+         style="stroke-width:0.264583"
+         x="20.843483"
+         y="45.65572"
+         id="tspan410">viyils@gmail.com</tspan><tspan
+         sodipodi:role="line"
+         style="stroke-width:0.264583"
+         x="20.843483"
+         y="49.62447"
+         id="tspan437" /></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.175px;font-family:'Times New Roman';-inkscape-font-specification:'Times New Roman, ';fill:#000000;stroke-width:0.264583"
+       x="20.135592"
+       y="25.326801"
+       id="text631"><tspan
+         sodipodi:role="line"
+         id="tspan629"
+         style="stroke-width:0.264583"
+         x="20.135592"
+         y="25.326801">Python 3.8</tspan><tspan
+         sodipodi:role="line"
+         style="stroke-width:0.264583"
+         x="20.135592"
+         y="29.295551"
+         id="tspan633">Microsoft Visual Studio Enterprise 2022 (64-bit)</tspan><tspan
+         sodipodi:role="line"
+         style="stroke-width:0.264583"
+         x="20.135592"
+         y="33.264301"
+         id="tspan635">Version 17.2.5</tspan><tspan
+         sodipodi:role="line"
+         style="stroke-width:0.264583"
+         x="20.135592"
+         y="37.233051"
+         id="tspan637" /></text>
+  </g>
+</svg>
