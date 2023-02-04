@@ -15,6 +15,7 @@ from ljm2 import Ljm2 #LIBRERIA LabJack2
 
 import continuous_threading
 import time
+import datetime
 
 Labjack1 = Ljm1 #LIB
 Labjack2 = Ljm2 #LIB
@@ -302,10 +303,10 @@ class Main():
 
 
 def monitoring():
-    tarjeta1.initI2C(1, 0, 6) #EL OBJETO comunicación LLAMA AL MÉTODO initI2C (TX,RX,DIRECCIÓN)
-    comunicacion.sendValueI2C([82]) #EL OBJETO comunicación LLAMA AL MÉTODO sendValueI2C ([COMANDO ASCII]) EN CASO DE NECESITAR OTRA UTILIDAD VER MANUAL DEL SENSOR
+    Labjack1.initI2C(1, 0, 6) #EL OBJETO comunicación LLAMA AL MÉTODO initI2C (TX,RX,DIRECCIÓN)
+    Labjack1.sendValueI2C([82]) #EL OBJETO comunicación LLAMA AL MÉTODO sendValueI2C ([COMANDO ASCII]) EN CASO DE NECESITAR OTRA UTILIDAD VER MANUAL DEL SENSOR
     time.sleep(0.9) #POR NADA DEL MUNDO SE PUEDE CAMBIAR ESTE RETARDO (VER MANUAL DEL SENSOR)
-    DO_real=float(comunicacion.readValueI2C()) #LEER SENSOR
+    DO_real=float(Labjack1.readValueI2C()) #LEER SENSOR
     print('DO1',DO_real)
     self.ax3_1.clear()
     self.ax3_1.set_xlabel('$Time$'),self.ax3_1.set_ylabel('$mg/L$')
@@ -322,98 +323,101 @@ def monitoring():
     self.y3=self.y3[-20:]
     
     #pH1
-            comunicacion.initI2C(1, 0, 3)
-            comunicacion.sendValueI2C([82])#114
-            time.sleep(0.6) #POR NADA DEL MUNDO SE PUEDE CAMBIAR ESTE RETARDO (VER MANUAL DEL SENSOR)
-            pH_real1=float(comunicacion.readValueI2C())
-            print('pH1',pH_real1)
-            self.ax4_1.clear()
-            self.ax4_1.set_xlabel('$Time$'),self.ax4_1.set_ylabel('$pH$')
+    Labjack1.initI2C(1, 0, 3)
+    Labjack1.sendValueI2C([82])#114
+    time.sleep(0.6) #POR NADA DEL MUNDO SE PUEDE CAMBIAR ESTE RETARDO (VER MANUAL DEL SENSOR)
+    pH_real1=float(Labjack1.readValueI2C())
+    print('pH1',pH_real1)
+    self.ax4_1.clear()
+    self.ax4_1.set_xlabel('$Time$'),self.ax4_1.set_ylabel('$pH$')
             # Limiting the list to be 20
-            pH_PBR1=self.y4[-20:]
-            self.ax4_1.plot(Time_PBR1,pH_PBR1), self.ax4_1.grid(True)
-            self.ax4_1.set_ylim(0, 14)
-            self.x4.append(datetime.now())
-            self.y4.append(pH_real1)
-            self.line4.draw()
-            # Limiting the storage vectors
-            self.x4=self.x4[-20:]
-            self.y4=self.y4[-20:]
+    pH_PBR1=self.y4[-20:]
+    self.ax4_1.plot(Time_PBR1,pH_PBR1), self.ax4_1.grid(True)
+    self.ax4_1.set_ylim(0, 14)
+    self.x4.append(datetime.now())
+    self.y4.append(pH_real1)
+    self.line4.draw()
+    # Limiting the storage vectors
+    self.x4=self.x4[-20:]
+    self.y4=self.y4[-20:]
 
     #DO2
-            comunicacion.initI2C(1, 0, 5)
-            comunicacion.sendValueI2C([82])
-            time.sleep(0.9)
-            DO2_real=float(comunicacion.readValueI2C())
-            self.ax3_2.clear()
-            self.ax3_2.set_xlabel('$Time$'),self.ax3_2.set_ylabel('$mg/L$')
-            # Limiting the list to be 20
-            Time_PBR2=self.x3_2[-20:]
-            OD_PBR2=self.y3_2[-20:]
-            print('DO2',DO2_real)
-            self.ax3_2.plot(Time_PBR2,OD_PBR2), self.ax3_2.grid(True)
-            self.ax3_2.set_ylim(0, 50)
-            self.x3_2.append(datetime.now())
-            self.y3_2.append(DO2_real)
-            self.line3_2.draw()
-            # Limiting the storage vectors
-            self.x3_2=self.x3_2[-20:]
-            self.y3_2=self.y3_2[-20:]
+    Labjack1.initI2C(1, 0, 5)
+    Labjack1.sendValueI2C([82])
+    time.sleep(0.9)
+    DO2_real=float(Labjack1.readValueI2C())
+    self.ax3_2.clear()
+    self.ax3_2.set_xlabel('$Time$'),self.ax3_2.set_ylabel('$mg/L$')
+    # Limiting the list to be 20
+    Time_PBR2=self.x3_2[-20:]
+    OD_PBR2=self.y3_2[-20:]
+    print('DO2',DO2_real)
+    self.ax3_2.plot(Time_PBR2,OD_PBR2), self.ax3_2.grid(True)
+    self.ax3_2.set_ylim(0, 50)
+    self.x3_2.append(datetime.now())
+    self.y3_2.append(DO2_real)
+    self.line3_2.draw()
+    # Limiting the storage vectors
+    self.x3_2=self.x3_2[-20:]
+    self.y3_2=self.y3_2[-20:]
+    
     #pH2
-            comunicacion.initI2C(1, 0, 2)
-            comunicacion.sendValueI2C([82])#114
-            time.sleep(0.6)
-            pH_real2=float(comunicacion.readValueI2C())
-            print('pH2',pH_real2)
-            self.ax4_2.clear()
-            self.ax4_2.set_xlabel('$Time$'),self.ax4_2.set_ylabel('$pH$')
-            # Limiting the list to be 20
-            pH_PBR2=self.y4_2[-20:]
-            self.ax4_2.plot(Time_PBR2,pH_PBR2), self.ax4_2.grid(True)
-            self.ax4_2.set_ylim(0, 14)
-            self.x4_2.append(datetime.now())
-            self.y4_2.append(pH_real2)
-            self.line4_2.draw()
-            # Limiting the storage vectors
-            self.x4_2=self.x4_2[-20:]
-            self.y4_2=self.y4_2[-20:]
+    Labjack1.initI2C(1, 0, 2)
+    Labjack1.sendValueI2C([82])#114
+    time.sleep(0.6)
+    pH_real2=float(comunicacion.readValueI2C())
+    print('pH2',pH_real2)
+    self.ax4_2.clear()
+    self.ax4_2.set_xlabel('$Time$'),self.ax4_2.set_ylabel('$pH$')
+    # Limiting the list to be 20
+    pH_PBR2=self.y4_2[-20:]
+    self.ax4_2.plot(Time_PBR2,pH_PBR2), self.ax4_2.grid(True)
+    self.ax4_2.set_ylim(0, 14)
+    self.x4_2.append(datetime.now())
+    self.y4_2.append(pH_real2)
+    self.line4_2.draw()
+    # Limiting the storage vectors
+    self.x4_2=self.x4_2[-20:]
+    self.y4_2=self.y4_2[-20:]
+    
     #DO3
-            comunicacion.initI2C(1, 0, 4)
-            comunicacion.sendValueI2C([82])
-            time.sleep(0.9)
-            DO3_real=float(comunicacion.readValueI2C())
-            self.ax3_3.clear()
-            self.ax3_3.set_xlabel('$Time$'),self.ax3_3.set_ylabel('$mg/L$')
-            print('DO3',DO3_real)
-            # Limiting the list to be 20
-            Time_PBR3=self.x3_3[-20:]
-            OD_PBR3=self.y3_3[-20:]
-            self.ax3_3.plot(Time_PBR3,OD_PBR3), self.ax3_3.grid(True)
-            self.ax3_3.set_ylim(0, 50)
-            self.x3_3.append(datetime.now())
-            self.y3_3.append(DO3_real)
-            self.line3_3.draw()
-            # Limiting the storage vectors
-            self.x3_3=self.x3_3[-20:]
-            self.y3_3=self.y3_3[-20:]
+    Labjack1.initI2C(1, 0, 4)
+    Labjack1.sendValueI2C([82])
+    time.sleep(0.9)
+    DO3_real=float(Labjack1.readValueI2C())
+    self.ax3_3.clear()
+    self.ax3_3.set_xlabel('$Time$'),self.ax3_3.set_ylabel('$mg/L$')
+    print('DO3',DO3_real)
+    # Limiting the list to be 20
+    Time_PBR3=self.x3_3[-20:]
+    OD_PBR3=self.y3_3[-20:]
+    self.ax3_3.plot(Time_PBR3,OD_PBR3), self.ax3_3.grid(True)
+    self.ax3_3.set_ylim(0, 50)
+    self.x3_3.append(datetime.now())
+    self.y3_3.append(DO3_real)
+    self.line3_3.draw()
+    # Limiting the storage vectors
+    self.x3_3=self.x3_3[-20:]
+    self.y3_3=self.y3_3[-20:]
+    
     #pH3
-            comunicacion.initI2C(1, 0, 1)
-            comunicacion.sendValueI2C([82])#114
-            time.sleep(0.6)
-            pH_real3=float(comunicacion.readValueI2C())
-            self.ax4_3.clear()
-            self.ax4_3.set_xlabel('$Time$'),self.ax4_3.set_ylabel('$pH$')
-            print('pH3', pH_real3)
-            # Limiting the list to be 20
-            pH_PBR3=self.y4_3[-20:]
-            self.ax4_3.plot(Time_PBR3,pH_PBR3), self.ax4_3.grid(True)
-            self.ax4_3.set_ylim(0, 14)
-            self.x4_3.append(datetime.now())
-            self.y4_3.append(pH_real3)
-            self.line4_3.draw()
-            # Limiting the storage vectors
-            self.x4_3=self.x4_3[-20:]
-            self.y4_3=self.y4_3[-20:]
+    Labjack1.initI2C(1, 0, 1)
+    Labjack1.sendValueI2C([82])#114
+    time.sleep(0.6)
+    pH_real3=float(Labjack1.readValueI2C())
+    self.ax4_3.clear()
+    self.ax4_3.set_xlabel('$Time$'),self.ax4_3.set_ylabel('$pH$')
+    print('pH3', pH_real3)
+    # Limiting the list to be 20
+    pH_PBR3=self.y4_3[-20:]
+    self.ax4_3.plot(Time_PBR3,pH_PBR3), self.ax4_3.grid(True)
+    self.ax4_3.set_ylim(0, 14)
+    self.x4_3.append(datetime.now())
+    self.y4_3.append(pH_real3)
+    self.line4_3.draw()
+    # Limiting the storage vectors
+    self.x4_3=self.x4_3[-20:]
+    self.y4_3=self.y4_3[-20:]
 
 
 

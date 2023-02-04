@@ -8,22 +8,27 @@ from tkinter import ttk #PAQUETE TTK
 import matplotlib.pyplot as plt #GRAHP LIBRARY
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg #GUI CANVAS
 
-#
+# Image loading library
+from PIL import ImageTk, Image
 
 from ljm1 import Ljm1 #LIBRERÍA LabJack1
 from ljm2 import Ljm2 #LIBRERIA LabJack2
 
 import continuous_threading
 import time
+import datetime
 
-Labjack1 = Ljm1 #LIB
-Labjack2 = Ljm2 #LIB
+# Intances for the Labjacks, and starting the comunication
+Labjack1 = Ljm1() #LIB
+Labjack2 = Ljm2() #LIB
+
+
 class Window_FBR:
     def __init__(self,tab):
         """
         New Widows 
         """
-        right_frame = tk.Frame(master=tab, bg='#C0C0C0', bd=1.5) #bg=color; bd=tamaño del borde en pixeles # Care master add
+        right_frame = tk.Frame(master=tab, bg='#00205B', bd=1.5) #bg=color; bd=tamaño del borde en pixeles # Care master add
         right_frame.place(relx=0.3, rely=0.055, relwidth=0.65, relheight=0.8) #posicionamiento de elementos horizontal,vertical,ancho,largo
         notebook=ttk.Notebook(right_frame)
         notebook.pack(fill='both',expand='yes')
@@ -41,8 +46,8 @@ class Window_FBR:
         notebook.add(tab_Biomass,text=' Biomass ')
         
         # Mini panels for the tab
-        tk.Label(tab,text="Light",font=("arial",15),bg=('white')).place(x=10,y=10)
-        tk.Label(tab,text="Color",font=("arial",14),bg=('white')).place(x=10,y=40)
+        tk.Label(tab,text="Light",font=("Helvetica",15), fg='white', bg=('#00205B')).place(x=10,y=10)
+        tk.Label(tab,text="Color",font=("Helvetica",14), fg='white', bg=('#00205B')).place(x=10,y=40)
         
         #   Configuration for the panels for the varaibles 
         
@@ -101,29 +106,31 @@ class Window_FBR:
     def __main__(self, tab):
         self.tab = tab #intance of tab
         
-        self.rcolor= tk.IntVar(master=tab,value=4)
-        tab.rcolor = tk.Radiobutton(tab, text="Red", variable=self.rcolor, value=1, command=self.color_rojo,font=("arial",10),bg=('white')).place(x=10,y=70)
-        tk.Radiobutton(tab, text="Green", variable=self.rcolor, value=2, command=self.color_verde,font=("arial",10),bg=('white')).place(x=10,y=90)
-        tk.Radiobutton(tab, text="Blue", variable=self.rcolor, value=3, command=self.color_azul,font=("arial",10),bg=('white')).place(x=10,y=110)
-        tk.Radiobutton(tab, text="White", variable=self.rcolor, value=4, command=self.color_white,font=("arial",10),bg=('white')).place(x=10,y=130)
+        self.rcolor = tk.IntVar(master=tab,value=4)
+        tab.rcolor = tk.Radiobutton(tab, text="Red", variable=self.rcolor, value=1, command=self.color_rojo,font=("Helvetica",10), bg=('#00205B'), fg=('white'), activebackground='#0E62A6', activeforeground='white', selectcolor='black', foreground='white').place(x=10,y=70)
+        tab.rcolor = tk.Radiobutton(tab, text="Green", variable=self.rcolor, value=2, command=self.color_verde,font=("Helvetica",10), bg=('#00205B'), fg=('white'), activebackground='#0E62A6', activeforeground='white', selectcolor='black', foreground='white').place(x=10,y=95)
+        tab.rcolor = tk.Radiobutton(tab, text="Blue", variable=self.rcolor, value=3, command=self.color_azul,font=("Helvetica",10), bg=('#00205B'), fg=('white'), activebackground='#0E62A6', activeforeground='white', selectcolor='black', foreground='white').place(x=10,y=120)
+        tab.rcolor = tk.Radiobutton(tab, text="White", variable=self.rcolor, value=4, command=self.color_white,font=("Helvetica",10), bg=('#00205B'), fg=('black'), activebackground='#0E62A6', activeforeground='white', selectcolor='black', foreground='white').place(x=10,y=145)
         
-        
+        #activebackground=common_bg, activeforeground=common_fg, selectcolor=common_bg
+               
+                            
         luz=tk.DoubleVar(master=tab)
-        tk.Scale(tab,variable=luz, from_ = 1, to = 900, orient = "horizontal",length=216,bg=('#BDBDBD')).place(x=80,y=70)
-        ttk.Entry(tab, width=30, textvariable=luz,font=("arial",10)).place(x=80,y=110)
-        tk.Label(tab,text="Color Intensity",font=("arial",12),bg=('white')).place(x=140,y=40)
-        tk.Label(tab,text="Temperature",font=("arial",15),bg=('white')).place(x=10,y=165)
-        tk.Label(tab, text="Ref:",font=("arial",12),bg=('white')).place(x=10,y=195)
+        tk.Scale(tab,variable=luz, from_ = 1, to = 900, orient = "horizontal",length=217,bg=('#BDBDBD')).place(x=80,y=70)
+        ttk.Entry(tab, width=31, textvariable=luz,font=("Helvetica",10)).place(x=80,y=110)
+        tk.Label(tab,text="Color Intensity",font=("Helvetica",15), fg='white', bg=('#00205B')).place(x=140,y=40)
+        tk.Label(tab,text="Temperature",font=("Helvetica",15), fg='white', bg=('#00205B')).place(x=10,y=175)
+        tk.Label(tab, text="Ref:",font=("Helvetica",12), fg='white', bg=('#00205B')).place(x=10,y=205)
         
         temperatura=tk.DoubleVar(master=tab)
-        tk.Scale(tab,variable=temperatura, from_ = 1, to = 92, orient = "horizontal",length=216,bg=('#BDBDBD')).place(x=80,y=195)
-        ttk.Entry(tab, width=30, textvariable=temperatura,font=("arial",10)).place(x=80,y=235)
-        tk.Label(tab,text="PBR Level",font=("arial",15),bg=('white')).place(x=10,y=265)
-        tk.Label(tab, text="Ref:",font=("arial",12),bg=('white')).place(x=10,y=295)
+        tk.Scale(tab,variable=temperatura, from_ = 1, to = 92, orient = "horizontal",length=217,bg=('#BDBDBD')).place(x=80,y=205)
+        ttk.Entry(tab, width=31, textvariable=temperatura, font=("Helvetica",10)).place(x=80,y=245)
+        tk.Label(tab,text="PBR Level",font=("Helvetica",15), fg='white',bg=('#00205B')).place(x=10,y=275)
+        tk.Label(tab, text="Ref:",font=("Helvetica",12),fg='white', bg=('#00205B')).place(x=10,y=305)
         
         nivel=tk.DoubleVar(master=tab)
-        tk.Scale(tab,variable=nivel, from_ = 1, to = 25, orient = "horizontal",length=216,bg=('#BDBDBD')).place(x=80,y=295)
-        ttk.Entry(tab, width=30, textvariable=nivel,font=("arial",10)).place(x=80,y=335)
+        tk.Scale(tab,variable=nivel, from_ = 1, to = 25, orient = "horizontal",length=217,bg=('#BDBDBD')).place(x=80,y=305)
+        ttk.Entry(tab, width=31, textvariable=nivel,font=("Helvetica",10)).place(x=80,y=345)
         
             
         
@@ -153,8 +160,8 @@ class SettingWidnows:
 
 class threads:
     def __init__(self, tab):
-        B_start = tk.Button(tab,text="Start",command=self.star_FBR(tab),width=30).place(x=80,y=365)
-        B_Stop = tk.Button(tab,text="Stop",command=self.stop_FBR(tab),width=30).place(x=80,y=400)
+        B_start = tk.Button(tab,text="Start",command=self.star_FBR(tab),width=30).place(x=60,y=400)
+        B_Stop = tk.Button(tab,text="Stop",command=self.stop_FBR(tab),width=30).place(x=60,y=435)
 
 class Main():
     def __init__(self):
@@ -164,8 +171,7 @@ class Main():
         # Configuratin of the wimdows
         self.root.title("ADRC")
         self.root.geometry('1100x720') #Size pixels
-        self.root.configure(background='red') 
-        self.root.config(bg='blue') # Borders
+        
         
         menubar = tk.Menu(self.root) # New Menu
         self.root.config(menu=menubar)  
@@ -196,11 +202,27 @@ class Main():
         self.notebook=ttk.Notebook(self.root) #CREAR OBJETO PARA GESTIONAR LAS PESTAÑAS
         self.notebook.pack(fill='both',expand='yes') # COnfiguration para que las pestañas tengan el mismo tamaño de la pant
         
-       
+              
+        # Create a photoimage object of the image in the path
+        icono_sabana = ImageTk.PhotoImage(Image.open("MONOCROMATICA-VERT.png").resize((176, 139)))
+        
+        
+        # Create a label object to display the image   
+
+        label_Sabana = ttk.Label(image= icono_sabana)
+        label_Sabana.image =  icono_sabana
+        # Position imagex
+        label_Sabana.place(x=95, y=520)
+
+        
+
+        
          # Crear Frames blancos
-        self.tab_FBR1=tk.Frame(self.notebook,bg='white')  #
-        self.tab_FBR2=tk.Frame(self.notebook,bg='white')  #
-        self.tab_FBR3=tk.Frame(self.notebook,bg='white')  #
+        self.tab_FBR1=tk.Frame(self.notebook,bg='#00205B')  #
+        self.tab_FBR2=tk.Frame(self.notebook,bg='#00205B')  #
+        self.tab_FBR3=tk.Frame(self.notebook,bg='#00205B')  #
+        
+        
         
         #ASIGNACIÓN PESTAÑAS FBR1,FBR2 Y FBR3
         self.notebook.add(self.tab_FBR1,text='FBR1') #
@@ -210,18 +232,24 @@ class Main():
         self.wFBR1 = Window_FBR(self.tab_FBR1)     
         self.wFBR2 = Window_FBR(self.tab_FBR2)  
         self.wFBR3 = Window_FBR(self.tab_FBR3)
+
+        #Start storage variables
+            # Global variables 
+        self.Time_PBR1=[] 
+        self.Time_PBR2=[]
+        self.Time_PBR3=[]
+        self.pH_PBR1=[]
+        self.pH_PBR2=[]
+        self.pH_PBR3=[]
+        self.DO_PBR1=[]
+        self.DO_PBR2=[]
+        self.DO_PBR3=[]
         
-        
-        # Configurations of figures for FBR1, FBR2 y FBR3
-        
-     
-        
-        
-        
+
         # Here is the start buttons
         
-        tk.Button(text="Start",command=self.star_FBR,width=30).place(x=80,y=365)
-        tk.Button(text="Stop",command=self.stop_FBR,width=30).place(x=80,y=400)
+        tk.Button(text="Start",command=self.star_FBR,width=30).place(x=80,y=435)
+        tk.Button(text="Stop",command=self.stop_FBR,width=30).place(x=80,y=465)
         
         b=0
     def MyThread(self, a):
@@ -240,16 +268,19 @@ class Main():
         # Threads FBR
         
         self.th = continuous_threading.ContinuousThread(target=self.MyThread, args=[0] ) #Defining the thread as continuos thread in a loop
+        self.th2 = continuous_threading.ContinuousThread(target=self.monitoring) #Defining the thread as continuos thread in a loop
         # self.th.daemon = True # Set thread to daemon
         print(self.th.is_running)
         #if self.th.is_running == False:
         self.th.start()
-        print(self.th.is_running)
-        
+        self.th2.start()
+        #print(self.th.is_running)
+        #
             
     def stop_FBR(self):
         print('Pausing Threads')
         self.th.stop()
+        self.th2.stop()
     
   
         
@@ -259,14 +290,128 @@ class Main():
         self.wFBR2.__main__(self.tab_FBR2)
         self.wFBR3.__main__(self.tab_FBR3)
         
-    
+         
 
+    
+    def monitoring(self):
+   
+        delay = 0.1
+        # start monitoring 
+        
+        # DO PBR1
+        Labjack1.initI2C(1, 0, 6) #EL OBJETO comunicación LLAMA AL MÉTODO initI2C (TX,RX,DIRECCIÓN)
+        Labjack1.sendValueI2C([82]) #EL OBJETO comunicación LLAMA AL MÉTODO sendValueI2C ([COMANDO ASCII]) EN CASO DE NECESITAR OTRA UTILIDAD VER MANUAL DEL SENSOR
+        time.sleep(0.9+delay) #POR NADA DEL MUNDO SE PUEDE CAMBIAR ESTE RETARDO (VER MANUAL DEL SENSOR)
+        DO_real_PBR1=float(Labjack1.readValueI2C()) #LEER SENSOR
+        print('DO1',DO_real_PBR1)
+        self.wFBR1.xDO.clear()
+        self.wFBR1.xDO.set_xlabel('$Time$'),self.wFBR1.xDO.set_ylabel('$mg \cdot L^{-1}$')
+        # Appendings dataset
+        self.Time_PBR1.append(datetime.datetime.now())
+        self.DO_PBR1.append(DO_real_PBR1)
+        # Limiting the list to be 20
+        self.Time_PBR1=self.Time_PBR1[-20:]
+        self.DO_PBR1=self.DO_PBR1[-20:]
+        self.wFBR1.xDO.plot(self.Time_PBR1,self.DO_PBR1), self.wFBR1.xDO.grid(True)
+        self.wFBR1.xDO.set_ylim(0, 50)
+        self.wFBR1.lineDO.draw()
+    
+      
+        
+        # pH PBR1
+        Labjack1.initI2C(1, 0, 3)
+        Labjack1.sendValueI2C([82])#114
+        time.sleep(0.6+delay) #POR NADA DEL MUNDO SE PUEDE CAMBIAR ESTE RETARDO (VER MANUAL DEL SENSOR)
+        pH_real_PBR1=float(Labjack1.readValueI2C())
+        print('pH1',pH_real_PBR1)
+        self.wFBR1.xpH.clear()
+        self.wFBR1.xpH.set_xlabel('$Time$'),self.wFBR1.xpH.set_ylabel('$pH$')
+        # appendings dataset
+        self.pH_PBR1.append(pH_real_PBR1) 
+        # Limiting the list to be 20
+        self.pH_PBR1=self.pH_PBR1[-20:]
+        self.wFBR1.xpH.plot(self.Time_PBR1,self.pH_PBR1), self.wFBR1.xpH.grid(True)
+        self.wFBR1.xpH.set_ylim(0, 14)
+        #self.wFBR1.xpH.draw()
+  
+
+        # DO PBR2
+        Labjack1.initI2C(1, 0, 5)
+        Labjack1.sendValueI2C([82])
+        time.sleep(0.9 + delay)
+        DO_real_PBR2=float(Labjack1.readValueI2C())
+        self.wFBR2.xDO.clear()
+        self.wFBR2.xDO.set_xlabel('$Time$'),self.wFBR2.xDO.set_ylabel('$mg/L$')
+        # Appending dataset
+        self.Time_PBR2.append(datetime.datetime.now())
+        self.DO_PBR2.append(DO_real_PBR2)        
+        # Limiting the list to be 20
+        self.Time_PBR2=self.Time_PBR2[-20:]
+        self.DO_PBR2=self.DO_PBR2[-20:]
+        print('DO2',DO_real_PBR2)
+        self.wFBR2.xDO.plot(self.Time_PBR2,self.DO_PBR2), self.wFBR2.xDO.grid(True)
+        self.wFBR2.xDO.set_ylim(0, 50)
+        #self.wFBR2.xDO.draw()
+  
+  
+        
+        # pH PBR2
+        Labjack1.initI2C(1, 0, 2)
+        Labjack1.sendValueI2C([82])#114
+        time.sleep(0.6 + delay)
+        pH_real_PBR2=float(Labjack1.readValueI2C())
+        print('pH2', pH_real_PBR2)
+        self.wFBR2.xpH.clear()
+        self.wFBR2.xpH.set_xlabel('$Time$'),self.wFBR2.xpH.set_ylabel('$pH$')
+        # Appending data
+        self.pH_PBR2.append(pH_real_PBR2)
+        # Limiting the list to be 20
+        self.pH_PBR2=self.pH_PBR2[-20:]
+        self.wFBR2.xpH.plot(self.Time_PBR2,self.pH_PBR2), self.wFBR2.xpH.grid(True)
+        self.wFBR2.xpH.set_ylim(0, 14)
+        #self.wFBR2.xpH.draw()
+    
+        # DO PBR3
+        Labjack1.initI2C( 1, 0, 4)
+        Labjack1.sendValueI2C([82])
+        time.sleep(0.9 + delay)
+        DO_real_PBR3=float(Labjack1.readValueI2C())
+        self.wFBR3.xDO.clear()
+        self.wFBR3.xDO.set_xlabel('$Time$'),self.wFBR3.xDO.set_ylabel('$mg/L$')
+        print('DO3',DO_real_PBR3)
+        # Apending dataset
+        self.Time_PBR3.append(datetime.datetime.now)
+        self.DO_PBR3.append(DO_real_PBR3)
+        # Limiting the list to be 20
+        self.Time_PBR3=self.Time_PBR3[-20:]
+        self.DO_PBR3=self.DO_PBR3[-20:]
+        #self.wFBR3.xDO.plot(self.Time_PBR3,self.DO_PBR3), self.wFBR3.xDO.grid(True)
+        self.wFBR3.xDO.set_ylim(0, 50)
+        #self.wFBR3.xDO.draw()
+        
+        # pH PBR3
+        Labjack1.initI2C(1, 0, 1)
+        Labjack1.sendValueI2C([82])#114
+        time.sleep(0.6 + delay)
+        pH_real_PBR3=float(Labjack1.readValueI2C())
+        self.wFBR3.xpH.clear()
+        self.wFBR3.xpH.set_xlabel('$Time$'),self.wFBR3.xpH.set_ylabel('$pH$')
+        print('pH3', pH_real_PBR3)
+        # Apending data
+        self.pH_PBR3.append(pH_real_PBR3)
+        # Limiting the list to be 20
+        self.pH_PBR3=self.pH_PBR3[-20:]
+        #self.wFBR3.xpH.plot(self.Time_PBR3,self.pH_PBR3), self.wFBR3.xpH.grid(True)
+        self.wFBR3.xpH.set_ylim(0, 14)
+        #self.wFBR3.xpH.draw()
+        
     
     def f_acerca(self):
         acerca = tk.Toplevel()
         acerca.geometry("700x720")
         acerca.bg=('red')
         acerca.resizable(width=False, height=False)
+        
         acerca.title("Acknowledgment:")
         marco1 = ttk.Frame(acerca,padding=(10, 10, 10, 10))
         marco1.pack(side="top", fill="both", expand=True)
@@ -298,123 +443,6 @@ class Main():
     # close the application
     def close(self):
        self.root.destroy()
-
-
-
-def monitoring():
-    tarjeta1.initI2C(1, 0, 6) #EL OBJETO comunicación LLAMA AL MÉTODO initI2C (TX,RX,DIRECCIÓN)
-    comunicacion.sendValueI2C([82]) #EL OBJETO comunicación LLAMA AL MÉTODO sendValueI2C ([COMANDO ASCII]) EN CASO DE NECESITAR OTRA UTILIDAD VER MANUAL DEL SENSOR
-    time.sleep(0.9) #POR NADA DEL MUNDO SE PUEDE CAMBIAR ESTE RETARDO (VER MANUAL DEL SENSOR)
-    DO_real=float(comunicacion.readValueI2C()) #LEER SENSOR
-    print('DO1',DO_real)
-    self.ax3_1.clear()
-    self.ax3_1.set_xlabel('$Time$'),self.ax3_1.set_ylabel('$mg/L$')
-    # Limiting the list to be 20
-    Time_PBR1=self.x3[-20:]
-    DO_PBR1=self.y3[-20:]
-    self.ax3_1.plot(Time_PBR1,DO_PBR1), self.ax3_1.grid(True)
-    self.ax3_1.set_ylim(0, 50)
-    self.x3.append(datetime.now())
-    self.y3.append(DO_real)
-    self.line3.draw()
-    # Limiting the storage vectors
-    self.x3=self.x3[-20:]
-    self.y3=self.y3[-20:]
-    
-    #pH1
-            comunicacion.initI2C(1, 0, 3)
-            comunicacion.sendValueI2C([82])#114
-            time.sleep(0.6) #POR NADA DEL MUNDO SE PUEDE CAMBIAR ESTE RETARDO (VER MANUAL DEL SENSOR)
-            pH_real1=float(comunicacion.readValueI2C())
-            print('pH1',pH_real1)
-            self.ax4_1.clear()
-            self.ax4_1.set_xlabel('$Time$'),self.ax4_1.set_ylabel('$pH$')
-            # Limiting the list to be 20
-            pH_PBR1=self.y4[-20:]
-            self.ax4_1.plot(Time_PBR1,pH_PBR1), self.ax4_1.grid(True)
-            self.ax4_1.set_ylim(0, 14)
-            self.x4.append(datetime.now())
-            self.y4.append(pH_real1)
-            self.line4.draw()
-            # Limiting the storage vectors
-            self.x4=self.x4[-20:]
-            self.y4=self.y4[-20:]
-
-    #DO2
-            comunicacion.initI2C(1, 0, 5)
-            comunicacion.sendValueI2C([82])
-            time.sleep(0.9)
-            DO2_real=float(comunicacion.readValueI2C())
-            self.ax3_2.clear()
-            self.ax3_2.set_xlabel('$Time$'),self.ax3_2.set_ylabel('$mg/L$')
-            # Limiting the list to be 20
-            Time_PBR2=self.x3_2[-20:]
-            OD_PBR2=self.y3_2[-20:]
-            print('DO2',DO2_real)
-            self.ax3_2.plot(Time_PBR2,OD_PBR2), self.ax3_2.grid(True)
-            self.ax3_2.set_ylim(0, 50)
-            self.x3_2.append(datetime.now())
-            self.y3_2.append(DO2_real)
-            self.line3_2.draw()
-            # Limiting the storage vectors
-            self.x3_2=self.x3_2[-20:]
-            self.y3_2=self.y3_2[-20:]
-    #pH2
-            comunicacion.initI2C(1, 0, 2)
-            comunicacion.sendValueI2C([82])#114
-            time.sleep(0.6)
-            pH_real2=float(comunicacion.readValueI2C())
-            print('pH2',pH_real2)
-            self.ax4_2.clear()
-            self.ax4_2.set_xlabel('$Time$'),self.ax4_2.set_ylabel('$pH$')
-            # Limiting the list to be 20
-            pH_PBR2=self.y4_2[-20:]
-            self.ax4_2.plot(Time_PBR2,pH_PBR2), self.ax4_2.grid(True)
-            self.ax4_2.set_ylim(0, 14)
-            self.x4_2.append(datetime.now())
-            self.y4_2.append(pH_real2)
-            self.line4_2.draw()
-            # Limiting the storage vectors
-            self.x4_2=self.x4_2[-20:]
-            self.y4_2=self.y4_2[-20:]
-    #DO3
-            comunicacion.initI2C(1, 0, 4)
-            comunicacion.sendValueI2C([82])
-            time.sleep(0.9)
-            DO3_real=float(comunicacion.readValueI2C())
-            self.ax3_3.clear()
-            self.ax3_3.set_xlabel('$Time$'),self.ax3_3.set_ylabel('$mg/L$')
-            print('DO3',DO3_real)
-            # Limiting the list to be 20
-            Time_PBR3=self.x3_3[-20:]
-            OD_PBR3=self.y3_3[-20:]
-            self.ax3_3.plot(Time_PBR3,OD_PBR3), self.ax3_3.grid(True)
-            self.ax3_3.set_ylim(0, 50)
-            self.x3_3.append(datetime.now())
-            self.y3_3.append(DO3_real)
-            self.line3_3.draw()
-            # Limiting the storage vectors
-            self.x3_3=self.x3_3[-20:]
-            self.y3_3=self.y3_3[-20:]
-    #pH3
-            comunicacion.initI2C(1, 0, 1)
-            comunicacion.sendValueI2C([82])#114
-            time.sleep(0.6)
-            pH_real3=float(comunicacion.readValueI2C())
-            self.ax4_3.clear()
-            self.ax4_3.set_xlabel('$Time$'),self.ax4_3.set_ylabel('$pH$')
-            print('pH3', pH_real3)
-            # Limiting the list to be 20
-            pH_PBR3=self.y4_3[-20:]
-            self.ax4_3.plot(Time_PBR3,pH_PBR3), self.ax4_3.grid(True)
-            self.ax4_3.set_ylim(0, 14)
-            self.x4_3.append(datetime.now())
-            self.y4_3.append(pH_real3)
-            self.line4_3.draw()
-            # Limiting the storage vectors
-            self.x4_3=self.x4_3[-20:]
-            self.y4_3=self.y4_3[-20:]
-
 
 
 

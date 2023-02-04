@@ -1,7 +1,7 @@
 from labjack import ljm
 
 
-class Ljm:
+class Ljm1:
     def __init__(self):
         self.handle = ''
         data=[]

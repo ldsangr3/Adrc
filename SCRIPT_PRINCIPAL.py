@@ -31,13 +31,13 @@ import multiprocessing #EJECUTA VARIAS RUTINAS DE FORMA PARALELA
 from threading import Thread #EVITAN EL ENCLAVAMIENTO DE LOS BOTONES
 import pandas #PARA GENERAR FORMATOS CSV
 import openpyxl #LEER Y ESCRIBIR TABLAS EXCEL
-from ljm1 import Ljm #LIBRERÍA LabJack1
+from ljm1 import Ljm1 #LIBRERÍA LabJack1
 from ljm2 import Ljm2 #LIBRERIA LabJack2
 
 
-tarjeta1=Ljm() #CREAR UN OBJETO LLAMADO TARJETA1 DE LA CLASE LJM
+tarjeta1=Ljm1() #CREAR UN OBJETO LLAMADO TARJETA1 DE LA CLASE LJM
 tarjeta2 = Ljm2() #LO MISMO PERO CON LJM2
-comunicacion = Ljm() #CREA UN OBJETO ESPECÍFICO DE LA MISMA CLASE PARA LA COMUNICACIÓN
+comunicacion = Ljm1() #CREA UN OBJETO ESPECÍFICO DE LA MISMA CLASE PARA LA COMUNICACIÓN
 comunicacion2 = Ljm2() #LO MISMO PERO CON LJM2
 
         
@@ -542,6 +542,7 @@ class Main(): #CLASE PRINCIPAL DE ESTE SCRIPT
 #MÉTODO FBR1        
     def fbr1(self):
         while True:
+            
     #LUZ 1
             self.referencia_luz1=float(self.luz1.get()) #ASOCIAR AL WIDGET escala_intensidad_luz Y A LA entrada1 SE CREA LA REFERENCIA DEL CONTROLADOR
             self.valor_luz1 = tarjeta1.readValue('AIN5')-0.39 #LEER ENTRADA ANÁLOGA AIN5
@@ -577,7 +578,7 @@ class Main(): #CLASE PRINCIPAL DE ESTE SCRIPT
             self.integral_anterior1=self.integral_temp1 #INTEGRAL ANTERIOR
             self.ax_1.set_xlabel('$Time$'),self.ax_1.set_ylabel('$°C$')
             #self.ax_1.clear()
-            print('temperature is', self.y)
+            #print('temperature is', self.y)
             # Limiting the list to be 500 to over memory storage
             self.x=self.x[-500:]
             self.y=self.y[-500:]
@@ -930,7 +931,8 @@ class Main(): #CLASE PRINCIPAL DE ESTE SCRIPT
 
     def monitoring(self):
         while TRUE:
-    #DO1
+    #DO1    
+            
             comunicacion.initI2C(1, 0, 6) #EL OBJETO comunicación LLAMA AL MÉTODO initI2C (TX,RX,DIRECCIÓN)
             comunicacion.sendValueI2C([82]) #EL OBJETO comunicación LLAMA AL MÉTODO sendValueI2C ([COMANDO ASCII]) EN CASO DE NECESITAR OTRA UTILIDAD VER MANUAL DEL SENSOR
             time.sleep(0.9) #POR NADA DEL MUNDO SE PUEDE CAMBIAR ESTE RETARDO (VER MANUAL DEL SENSOR)
@@ -1049,7 +1051,7 @@ class Main(): #CLASE PRINCIPAL DE ESTE SCRIPT
 #DESANCLAR BOTON
     def accion_boton(self):
         Thread(target=self.fbr1).start()
-        #threading.Thread(target=self.monitoring).start()
+        threading.Thread(target=self.monitoring).start()
     def accion_boton2(self):
         Thread(target=self.fbr2).start()
     def accion_boton3(self):
