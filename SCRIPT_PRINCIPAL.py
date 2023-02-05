@@ -29,8 +29,8 @@ from matplotlib import pyplot
 from random import randrange #NÚMEROS ALEATORIOS
 import multiprocessing #EJECUTA VARIAS RUTINAS DE FORMA PARALELA
 from threading import Thread #EVITAN EL ENCLAVAMIENTO DE LOS BOTONES
-import pandas #PARA GENERAR FORMATOS CSV
-import openpyxl #LEER Y ESCRIBIR TABLAS EXCEL
+#import pandas #PARA GENERAR FORMATOS CSV
+#import openpyxl #LEER Y ESCRIBIR TABLAS EXCEL
 from ljm1 import Ljm1 #LIBRERÍA LabJack1
 from ljm2 import Ljm2 #LIBRERIA LabJack2
 

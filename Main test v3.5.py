@@ -1,4 +1,5 @@
 # Release ADRC
+# Stils Bugs at vector of DO of PBR3
 import numpy as np #Numpy
 from ADRC import *
 import tkinter as tk #TKINTER ES PARA INTERFAZ GRÁFICA
