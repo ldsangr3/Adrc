@@ -1,4 +1,4 @@
-# Release ADRC
+# Release ADRC Neiry
 # Stils Bugs at vector of DO of PBR3
 import numpy as np #Numpy
 from ADRC import *
@@ -227,6 +227,7 @@ class Main():
         self.notebook.add(self.tab_FBR1,text='FBR1') #
         self.notebook.add(self.tab_FBR2,text='FBR2') #
         self.notebook.add(self.tab_FBR3,text='FBR3') #     
+        
         # Configurations FBR1, FBR2 y FBR3
         self.wFBR1 = Window_FBR(self.tab_FBR1)     
         self.wFBR2 = Window_FBR(self.tab_FBR2)  
