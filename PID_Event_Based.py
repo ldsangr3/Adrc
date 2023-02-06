@@ -13,7 +13,6 @@ class PID_Event_Based:
     """
     Discrete PID control
     """
-
     def __init__(self, P, I, D, Z, Integrator_max=500, Integrator_min=-500):
         
         # PID parameters
