@@ -1,4 +1,4 @@
-# Release ADRC Neiry
+# Release ADRC 
 # Stils Bugs at vector of DO of PBR3
 import numpy as np #Numpy
 from ADRC import *
@@ -19,9 +19,16 @@ import continuous_threading
 import time
 import datetime
 
+import PID_Event_Based
+
 # Intances for the Labjacks, and starting the comunication
 Labjack1 = Ljm1() #LIB
 Labjack2 = Ljm2() #LIB
+PID_PBR1 = PID_Event_Based() #
+PID_PBR2 = ADRC() #
+PID.PBR2.
+
+
 
 
 class Window_FBR:
@@ -232,6 +239,12 @@ class Main():
         self.wFBR1 = Window_FBR(self.tab_FBR1)     
         self.wFBR2 = Window_FBR(self.tab_FBR2)  
         self.wFBR3 = Window_FBR(self.tab_FBR3)
+        
+        # Instances ofs PIDs
+        self.PID_temp_PBR1 = PID_Event_Based (P=1.5, I=0.5, D=0.01, z=0)
+        self.PID_temp_PBR2 = PID_Event_Based (P=2, I=0.2, D=0.02, z=0)
+        self.PID_temp_PBR3 = PID_Event_Based (P=3, I=0.5, D=0.1, z=0)         
+        
 
         #Start storage variables
         # Global variables 
@@ -288,12 +301,12 @@ class Main():
     def star_FBR(self): 
         print('Starting or Resuming Threads')
         # Threads FBR
-        
+        pid_temperature_executiontime=1
         self.th = continuous_threading.ContinuousThread(target=self.MyThread, args=[0] ) #Defining the thread as continuos thread in a loop
         self.th2 = continuous_threading.ContinuousThread(target=self.monitoring) #Defining the thread as continuos thread in a loop
-        self.th3 = continuous_threading.PeriodicThread(1,target=self.nivel_monitoring) #Defining the thread as continuos thread in a loop
-        self.th4 = continuous_threading.PeriodicThread(1,target=self.Light_control) #Defining the thread as continuos thread in a loop
-        self.th5 = continuous_threading.PeriodicThread(1,target=self.temperature_control) #Defining the thread as continuos thread in a loop
+        self.th3 = continuous_threading.PeriodicThread(1,target=self.nivel_monitoring) #Defining the thread as periodic thread in a loop
+        self.th4 = continuous_threading.PeriodicThread(1,target=self.Light_control) #Defining the thread as periodic thread in a loop
+        self.th5 = continuous_threading.PeriodicThread(pid_temperature_executiontime,target=self.temperature_control, args=[pid_temperature_executiontime]) #Defining the thread as periodic thread in a loop
         # self.th.daemon = True # Set thread to daemon
         #print(self.th.is_running)
         #if self.th.is_running == False:
@@ -364,7 +377,11 @@ class Main():
         
         
     
-    def temperature_control(self):
+    def temperature_control(self, z):
+        #z is the time of execution of the thread
+
+        print("z = ", z)
+        
         # append time temperature 
         self.TimeTemperature.append(datetime.datetime.now())
         self.TimeTemperature = self.TimeTemperature[-20:]
@@ -377,7 +394,9 @@ class Main():
         self.Tmp_PBR1.append(Temp_PBR1)
         self.Tmp_PBR1=self.Tmp_PBR1[-20:]        
         self.wFBR1.xTemp.plot(self.TimeTemperature,self.Tmp_PBR1), self.wFBR1.xTemp.grid(True)
-        self.wFBR1.lineTemp.draw()   
+        self.wFBR1.lineTemp.draw()
+        # Control temp PBR1
+        self.   
         
         # Temperature PBR1
         Temp_PBR2 = 55.56*Labjack1.readValue('AIN1') + 255.37 - 273.15 

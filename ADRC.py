@@ -8,7 +8,7 @@
 from collections import deque
 from math import *
 
-class ADRC():
+class ADRC:
     def __init__(self, disturbance, plant_output, x_stimation, Control_singal, integral_): 
         #Condiciones iniciales 
         self.disturbance = disturbance # Inicial disturbance

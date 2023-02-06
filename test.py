@@ -1,25 +1,47 @@
-import time
-import continuous_threading
+#matplotlib inline
+from tclab import clock, setup, Historian, Plotter
+
+TCLab = setup(connected=False, speedup=10)
+
+controller = PID(2, 0.1, 2)        # create pid control
+controller.send(None)              # initialize
+
+tfinal = 800
+
+with TCLab() as lab:
+    h = Historian([('SP', lambda: SP), ('T1', lambda: lab.T1), ('MV', lambda: MV), ('Q1', lab.Q1)])
+    p = Plotter(h, tfinal)
+    T1 = lab.T1
+    for t in clock(tfinal, 2):
+        SP = T1 if t < 50 else 50           # get setpoint
+        PV = lab.T1                         # get measurement
+        MV = controller.send([t, PV, SP])   # compute manipulated variable
+        lab.U1 = MV                         # apply 
+        p.update(t)                         # update information display
 
 
-counter = [0]
-
-def inc_counter():
-    counter[0] += 1
-
-th = continuous_threading.PausableThread(target=inc_counter)
-
-th.start()
-time.sleep(4)
-
-th.stop()
-time.sleep(4)
-
-value = counter[0]
-assert value > 0
-
-time.sleep(0.1)
-assert value == counter[0]
-
-th.start()
-time.sleep(0.1)
+    def PID(Kp, Ki, Kd, MV_bar=0):
+        # initialize stored data
+        e_prev = 0
+        t_prev = -100
+        I = 0
+        
+        # initial control
+        MV = MV_bar
+        
+        while True:
+            # yield MV, wait for new t, PV, SP
+            t, PV, SP = yield MV
+            
+            # PID calculations
+            e = SP - PV
+            
+            P = Kp*e
+            I = I + Ki*e*(t - t_prev)
+            D = Kd*(e - e_prev)/(t - t_prev)
+            
+            MV = MV_bar + P + I + D
+            
+            # update stored data for next iteration
+            e_prev = e
+            t_prev = t
