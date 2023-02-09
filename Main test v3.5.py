@@ -19,14 +19,17 @@ import continuous_threading
 import time
 import datetime
 
-import PID_Event_Based
+from PID import PID_Event_Based
 
 # Intances for the Labjacks, and starting the comunication
 Labjack1 = Ljm1() #LIB
 Labjack2 = Ljm2() #LIB
-PID_PBR1 = PID_Event_Based() #
-PID_PBR2 = ADRC() #
-PID.PBR2.
+
+# Library to export data
+from openpyxl import load_workbook as load_excel_file
+from openpyxl import Workbook
+
+
 
 
 
@@ -123,22 +126,22 @@ class Window_FBR:
         #activebackground=common_bg, activeforeground=common_fg, selectcolor=common_bg
                
                             
-        luz=tk.DoubleVar(master=tab)
-        tk.Scale(tab,variable=luz, from_ = 1, to = 900, orient = "horizontal",length=217,bg=('#BDBDBD')).place(x=80,y=70)
-        ttk.Entry(tab, width=31, textvariable=luz,font=("Helvetica",10)).place(x=80,y=110)
+        self.Ref_luz=tk.DoubleVar(master=tab)
+        tk.Scale(tab,variable=self.Ref_luz, from_ = 1, to = 900, orient = "horizontal",length=217,bg=('#BDBDBD')).place(x=80,y=70)
+        ttk.Entry(tab, width=31, textvariable=self.Ref_luz,font=("Helvetica",10)).place(x=80,y=110)
         tk.Label(tab,text="Color Intensity",font=("Helvetica",15), fg='white', bg=('#00205B')).place(x=140,y=40)
         tk.Label(tab,text="Temperature",font=("Helvetica",15), fg='white', bg=('#00205B')).place(x=10,y=175)
         tk.Label(tab, text="Ref:",font=("Helvetica",12), fg='white', bg=('#00205B')).place(x=10,y=205)
         
-        temperatura=tk.DoubleVar(master=tab)
-        tk.Scale(tab,variable=temperatura, from_ = 1, to = 92, orient = "horizontal",length=217,bg=('#BDBDBD')).place(x=80,y=205)
-        ttk.Entry(tab, width=31, textvariable=temperatura, font=("Helvetica",10)).place(x=80,y=245)
+        self.Ref_tmp=tk.DoubleVar(master=tab)
+        tk.Scale(tab,variable=self.Ref_tmp, from_ = 1, to = 92, orient = "horizontal",length=217,bg=('#BDBDBD')).place(x=80,y=205)
+        ttk.Entry(tab, width=31, textvariable=self.Ref_tmp, font=("Helvetica",10)).place(x=80,y=245)
         tk.Label(tab,text="PBR Level",font=("Helvetica",15), fg='white',bg=('#00205B')).place(x=10,y=275)
         tk.Label(tab, text="Ref:",font=("Helvetica",12),fg='white', bg=('#00205B')).place(x=10,y=305)
         
-        nivel=tk.DoubleVar(master=tab)
-        tk.Scale(tab,variable=nivel, from_ = 1, to = 25, orient = "horizontal",length=217,bg=('#BDBDBD')).place(x=80,y=305)
-        ttk.Entry(tab, width=31, textvariable=nivel,font=("Helvetica",10)).place(x=80,y=345)
+        self.Ref_lvl=tk.DoubleVar(master=tab)
+        tk.Scale(tab,variable=self.Ref_lvl, from_ = 1, to = 25, orient = "horizontal",length=217,bg=('#BDBDBD')).place(x=80,y=305)
+        ttk.Entry(tab, width=31, textvariable=self.Ref_lvl,font=("Helvetica",10)).place(x=80,y=345)
         
             
         
@@ -218,32 +221,29 @@ class Main():
         label_Sabana.image =  icono_sabana
         # Position imagex
         label_Sabana.place(x=700, y=790)
-        
 
-        
-
-        
-         # Crear Frames blancos
+        # Blue Frames
         self.tab_FBR1=tk.Frame(self.notebook,bg='#00205B')  #
         self.tab_FBR2=tk.Frame(self.notebook,bg='#00205B')  #
         self.tab_FBR3=tk.Frame(self.notebook,bg='#00205B')  #
         
         
         
-        #ASIGNACIÓN PESTAÑAS FBR1,FBR2 Y FBR3
+        # Tabs FBR1,FBR2 Y FBR3
         self.notebook.add(self.tab_FBR1,text='FBR1') #
         self.notebook.add(self.tab_FBR2,text='FBR2') #
         self.notebook.add(self.tab_FBR3,text='FBR3') #     
         
-        # Configurations FBR1, FBR2 y FBR3
+        # Configuration of FBR1, FBR2 and FBR3
         self.wFBR1 = Window_FBR(self.tab_FBR1)     
         self.wFBR2 = Window_FBR(self.tab_FBR2)  
         self.wFBR3 = Window_FBR(self.tab_FBR3)
         
+        
         # Instances ofs PIDs
-        self.PID_temp_PBR1 = PID_Event_Based (P=1.5, I=0.5, D=0.01, z=0)
-        self.PID_temp_PBR2 = PID_Event_Based (P=2, I=0.2, D=0.02, z=0)
-        self.PID_temp_PBR3 = PID_Event_Based (P=3, I=0.5, D=0.1, z=0)         
+        self.PID_temp_PBR1 = PID_Event_Based (P=1.5, I=0.5, D=0.01, Z=0)
+        self.PID_temp_PBR2 = PID_Event_Based (P=2, I=0.2, D=0.02, Z=0)
+        self.PID_temp_PBR3 = PID_Event_Based (P=3, I=0.5, D=0.1, Z=0)         
         
 
         #Start storage variables
@@ -278,6 +278,8 @@ class Main():
         self.Tmp_PBR2=[]
         self.Tmp_PBR3=[]
         
+        # Create  aExcel Boot to save data
+        wb = load_excel_file("Data_Excel")
         
         
 
@@ -395,9 +397,33 @@ class Main():
         self.Tmp_PBR1=self.Tmp_PBR1[-20:]        
         self.wFBR1.xTemp.plot(self.TimeTemperature,self.Tmp_PBR1), self.wFBR1.xTemp.grid(True)
         self.wFBR1.lineTemp.draw()
-        # Control temp PBR1
-        self.   
         
+        # Control temp PBR1
+        
+        # Setpoint
+        self.PID_temp_PBR1.setPoint(self.wFBR1.Ref_tmp.get())
+        print("the setpoint is", self.PID_temp_PBR1.getPoint())
+        # Call update function of the PID and send the value of the actual temperature
+        UPID_Temp_PBR1 = self.PID_temp_PBR1.update(Temp_PBR1)
+        
+        # Write the temperature computed value in the labjack
+        Labjack1.sendValue('DAC0', np.interp(UPID_Temp_PBR1, [0, 100], [0, 5])) # Interp
+        
+        # Turn on Cooler
+        if Temp_PBR1 > self.wFBR1.Ref_tmp.get(): #VENTILADOR ACTIVACIÓN DIGITAL
+                Labjack1.sendValue('CIO1',5)
+        else:
+                Labjack1.sendValue('CIO1',0)
+        
+        
+        
+        
+        
+        
+        
+        
+                
+                
         # Temperature PBR1
         Temp_PBR2 = 55.56*Labjack1.readValue('AIN1') + 255.37 - 273.15 
         self.wFBR2.xTemp.clear()

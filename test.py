@@ -1,47 +1,11 @@
-#matplotlib inline
-from tclab import clock, setup, Historian, Plotter
-
-TCLab = setup(connected=False, speedup=10)
-
-controller = PID(2, 0.1, 2)        # create pid control
-controller.send(None)              # initialize
-
-tfinal = 800
-
-with TCLab() as lab:
-    h = Historian([('SP', lambda: SP), ('T1', lambda: lab.T1), ('MV', lambda: MV), ('Q1', lab.Q1)])
-    p = Plotter(h, tfinal)
-    T1 = lab.T1
-    for t in clock(tfinal, 2):
-        SP = T1 if t < 50 else 50           # get setpoint
-        PV = lab.T1                         # get measurement
-        MV = controller.send([t, PV, SP])   # compute manipulated variable
-        lab.U1 = MV                         # apply 
-        p.update(t)                         # update information display
-
-
-    def PID(Kp, Ki, Kd, MV_bar=0):
-        # initialize stored data
-        e_prev = 0
-        t_prev = -100
-        I = 0
-        
-        # initial control
-        MV = MV_bar
-        
-        while True:
-            # yield MV, wait for new t, PV, SP
-            t, PV, SP = yield MV
-            
-            # PID calculations
-            e = SP - PV
-            
-            P = Kp*e
-            I = I + Ki*e*(t - t_prev)
-            D = Kd*(e - e_prev)/(t - t_prev)
-            
-            MV = MV_bar + P + I + D
-            
-            # update stored data for next iteration
-            e_prev = e
-            t_prev = t
+from openpyxl import load_workbook
+wb = load_workbook("demo.xlsx") 
+# Sheet is the SheetName where the data has to be entered
+sheet = wb["Sheet"]
+# Enter into 1st row and Ath column
+sheet['A1'] = 'Software Testing Help'
+# Similarly you can enter in the below shown fashion
+sheet.cell(row=2, column=1).value = 'OpenPyxl Tutorial'
+sheet['B1'] = 10   
+sheet.cell(row=2, column=2).value =13.4
+wb.save("demo.xlsx")

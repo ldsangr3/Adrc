@@ -1,19 +1,13 @@
 ### Based on A Simple Event-Based PID Controller of Årzén, Karl-Erik 1999
 
-######	Example	#########
+######	Viyils v 1.0	#########
 
-#
-#p=PID(3.0,0.4,1.2)
-#p.setPoint(5.0)
-#while True:
-#     pid = p.update(measurement_value)
-#
-#
+
 class PID_Event_Based:
     """
     Discrete PID control
     """
-    def __init__(self, P, I, D, Z, Integrator_max=500, Integrator_min=-500):
+    def __init__(self, P, I, D, Z, Integrator_max=100, Integrator_min=-100):
         
         # PID parameters
         
@@ -58,9 +52,17 @@ class PID_Event_Based:
             self.ui = self.Integrator_max
         elif self.ui < self.Integrator_min:
             self.ui = self.Integrator_min
-
+    
+        
+        # Control signal
         PID = self.ud + self.up + self.ui
         
+        # Atuator saturations
+        if PID>=100:
+            PID=100
+        if PID <=0:
+            PID=0    
+            
         # Update states
         self.ui = self.ui + self.bi*self.DeltaTime*self.error
         self.y_old = current_value
