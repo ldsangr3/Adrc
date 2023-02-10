@@ -1,18 +1,11 @@
-import openpyxl
-import threading
+from collections import deque
 
-def update_excel_file():
-    # Load the Excel workbook
-    workbook = openpyxl.load_workbook("example.xlsx")
-    # Select the active worksheet
-    worksheet = workbook.active
-    # Update a cell value
-    worksheet["A1"] = "Updated Value"
-    # Save the workbook
-    workbook.save("example.xlsx")
+MAX_SIZE = 100  # Maximum size of the list
+data = deque(maxlen=MAX_SIZE)
 
-# Create a thread
-thread = threading.Thread(target=update_excel_file)
-# Start the thread
-thread.start()
+# Adding elements to the list
+for i in range(1000):
+    data.append(i)
 
+# The list will only contain the last 100 elements
+print(len(data))  # Output: 100
