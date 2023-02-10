@@ -284,18 +284,61 @@ class Main():
         self.today = self.Excel_Date.strftime("%h.%d.%Y") ############
         self.Hours = self.Excel_Date.strftime("%H.%M.%S") ############
 
-        workbook = xlsxwriter.Workbook('Data_'+ self.Hours +"_"+ self.today +'.xlsx')
+        ### Create Light Excel Workbook
+        workbook = xlsxwriter.Workbook('Light'+ self.Hours +"_"+ self.today +'.xlsx')
         bold = workbook.add_format({'bold': True})
         worksheet = workbook.add_worksheet()
-
         worksheet.write('A1', 'Time', bold)
-        worksheet.write('B1', 'Light Intensity', bold)
-        # Temporal
-        self.b =1
-        self.start_row =1
-
+        worksheet.write('B1', 'Light PBR1', bold)
+        worksheet.write('C1', 'Light PBR2', bold)
+        worksheet.write('D1', 'Light PBR3', bold)
         # save changes to workbook
         workbook.close()
+        
+        ### Create Nivel Excel Workbook
+        workbook = xlsxwriter.Workbook('Nivel_'+ self.Hours +"_"+ self.today +'.xlsx')
+        bold = workbook.add_format({'bold': True})
+        worksheet = workbook.add_worksheet()
+        worksheet.write('A1', 'Time', bold)
+        worksheet.write('B1', 'Nivel PBR1', bold)
+        worksheet.write('C1', 'Nivel PBR2', bold)
+        worksheet.write('D1', 'Nivel PBR3', bold)
+        # save changes to workbook
+        workbook.close()
+        
+        ### Create Temperature Excel Workbook
+        workbook = xlsxwriter.Workbook('Temperature_'+ self.Hours +"_"+ self.today +'.xlsx')
+        bold = workbook.add_format({'bold': True})
+        worksheet = workbook.add_worksheet()
+        worksheet.write('A1', 'Time', bold)
+        worksheet.write('B1', 'Temperature PBR1', bold)
+        worksheet.write('C1', 'Temperature PBR2', bold)
+        worksheet.write('D1', 'Temperature PBR3', bold)
+        # save changes to workbook
+        
+        ### Create I2C Excel Workbook
+        workbook = xlsxwriter.Workbook('I2C_'+ self.Hours +"_"+ self.today +'.xlsx')
+        bold = workbook.add_format({'bold': True})
+        worksheet = workbook.add_worksheet()
+        worksheet.write('A1', 'Time', bold)
+        worksheet.write('B1', 'PH PBR1', bold)
+        worksheet.write('C1', 'pH PBR2', bold)
+        worksheet.write('D1', 'pH PBR3', bold)
+        worksheet.write('E1', 'DO PBR1', bold)
+        worksheet.write('F1', 'DO PBR2', bold)
+        worksheet.write('G1', 'DO PBR3', bold)
+        # save changes to workbook
+        workbook.close()
+        
+        
+        # Variables for start saving excel data
+        self.start_row_Ligt_Control = 1
+        self.start_row_nivel_monitoring = 1
+        self.start_row_IC2_monitoring = 1
+        self.start_row_Temperature_Control = 1
+        
+        
+        
 
         
         # Here is the start buttons
@@ -322,7 +365,7 @@ class Main():
         # Threads FBR
         pid_temperature_executiontime=1
         self.th = continuous_threading.ContinuousThread(target=self.MyThread, args=[0] ) #Defining the thread as continuos thread in a loop
-        self.th2 = continuous_threading.ContinuousThread(target=self.monitoring) #Defining the thread as continuos thread in a loop
+        self.th2 = continuous_threading.ContinuousThread(target=self.I2C_monitoring) #Defining the thread as continuos thread in a loop
         self.th3 = continuous_threading.PeriodicThread(1,target=self.nivel_monitoring) #Defining the thread as periodic thread in a loop
         self.th4 = continuous_threading.PeriodicThread(1,target=self.Light_control, args=[10] ) #Defining the thread as periodic thread in a loop
         self.th5 = continuous_threading.PeriodicThread(pid_temperature_executiontime,target=self.temperature_control, args=[pid_temperature_executiontime]) #Defining the thread as periodic thread in a loop
@@ -356,18 +399,71 @@ class Main():
         self.wFBR2.__main__(self.tab_FBR2)
         self.wFBR3.__main__(self.tab_FBR3)
         
-    def update_excel_file(self, sheet,Time, Intensity_PBR1):
+        
+    def update_excel_file_Light(self, sheet, Time, Intensity_PBR1, Intensity_PBR2, Intensity_PBR3):
         
         # Load the Excel workbook
-        workbook = openpyxl.load_workbook('Data_'+ self.Hours +"_"+ self.today +'.xlsx')
+        workbook = openpyxl.load_workbook('Light_'+ self.Hours +"_"+ self.today +'.xlsx')
         # Select the active worksheet
         worksheet = workbook.active
         # Update a cell value
         worksheet["A" + str(sheet)] = Time
         worksheet["B" + str(sheet)] = str(Intensity_PBR1)
+        worksheet["C" + str(sheet)] = str(Intensity_PBR2)
+        worksheet["D" + str(sheet)] = str(Intensity_PBR3)
         
         # Save the workbook
-        workbook.save('Data_'+ self.Hours +"_"+ self.today +'.xlsx')
+        workbook.save('Light_'+ self.Hours +"_"+ self.today +'.xlsx')
+    
+    def update_excel_file_nivel(self, sheet, Time, Nivel_PBR1, Nivel_PBR2, Nivel_PBR3):
+        
+        # Load the Excel workbook
+        workbook = openpyxl.load_workbook('Nivel_'+ self.Hours +"_"+ self.today +'.xlsx')
+        # Select the active worksheet
+        worksheet = workbook.active
+        # Update a cell value
+        worksheet["A" + str(sheet)] = Time
+        worksheet["B" + str(sheet)] = str(Nivel_PBR1)
+        worksheet["C" + str(sheet)] = str(Nivel_PBR2)
+        worksheet["D" + str(sheet)] = str(Nivel_PBR3)
+        
+        # Save the workbook
+        workbook.save('Nivel_'+ self.Hours +"_"+ self.today +'.xlsx')
+             
+    def update_excel_file_temperature(self, sheet, Time, Temperature_PBR1, Temperature_PBR2, Temperature_PBR3):
+        
+        # Load the Excel workbook
+        workbook = openpyxl.load_workbook('Temperature_'+ self.Hours +"_"+ self.today +'.xlsx')
+        # Select the active worksheet
+        worksheet = workbook.active
+        # Update a cell value
+        worksheet["A" + str(sheet)] = Time
+        worksheet["B" + str(sheet)] = str(Temperature_PBR1)
+        worksheet["C" + str(sheet)] = str(Temperature_PBR2)
+        worksheet["D" + str(sheet)] = str(Temperature_PBR3)
+        
+        # Save the workbook
+        workbook.save('Temperature_'+ self.Hours +"_"+ self.today +'.xlsx')
+        
+    def update_excel_file_I2C(self, sheet, Time, ph_PBR1, ph_PBR2, ph_PBR3, DO_PBR1, DO_PBR2, DO_PBR3):
+        
+        # Load the Excel workbook
+        workbook = openpyxl.load_workbook('I2C_'+ self.Hours +"_"+ self.today +'.xlsx')
+        # Select the active worksheet
+        worksheet = workbook.active
+        # Update a cell value
+        worksheet["A" + str(sheet)] = Time
+        worksheet["B" + str(sheet)] = str(ph_PBR1)
+        worksheet["C" + str(sheet)] = str(ph_PBR2)
+        worksheet["D" + str(sheet)] = str(ph_PBR3)
+        worksheet["E" + str(sheet)] = str(DO_PBR1)
+        worksheet["F" + str(sheet)] = str(DO_PBR2)
+        worksheet["G" + str(sheet)] = str(DO_PBR3)
+        
+        # Save the workbook
+        workbook.save('I2C_'+ self.Hours +"_"+ self.today +'.xlsx')
+        
+        
        
     def nivel_monitoring(self):
         # Nivel PBR1
@@ -405,6 +501,12 @@ class Main():
         self.Timelvl_PBR3=self.Timelvl_PBR3[-20:]  
         self.wFBR3.xLvl.plot(self.Timelvl_PBR3,self.lvl_PBR3), self.wFBR3.xLvl.grid(True)  
         self.wFBR3.lineLvl.draw()  
+        
+        # Update excel File
+        time = datetime.datetime.now()
+        time = time.strftime("%H.%M.%S")
+        self.start_row_nivel_monitoring += 1
+        self.update_excel_file_nivel(sheet=self.start_row_nivel_monitoring,Time=time, Nivel_PBR1=self.lvl_PBR1,Nivel_PBR2=self.lvl_PBR2, Nivel_PBR3=self.lvl_PBR3 )
         
         
     
@@ -448,12 +550,11 @@ class Main():
         
         
         
-        
-        
+         
         
                 
                 
-        # Temperature PBR1
+        # Temperature PBR2
         Temp_PBR2 = 55.56*Labjack1.readValue('AIN1') + 255.37 - 273.15 
         self.wFBR2.xTemp.clear()
         self.wFBR2.xTemp.set_xlabel('$Time$'), self.wFBR2.xTemp.set_ylabel('$°C$')
@@ -462,14 +563,24 @@ class Main():
         self.wFBR2.xTemp.plot(self.TimeTemperature,self.Tmp_PBR2), self.wFBR2.xTemp.grid(True)
         self.wFBR2.lineTemp.draw()   
         
-        # Temperature PBR1
+        # Temperature PBR3
         Temp_PBR3 = 55.56*Labjack1.readValue('AIN3') + 255.37 - 273.15 
         self.wFBR3.xTemp.clear()
         self.wFBR3.xTemp.set_xlabel('$Time$'), self.wFBR3.xTemp.set_ylabel('$°C$')
         self.Tmp_PBR3.append(Temp_PBR3)
         self.Tmp_PBR3=self.Tmp_PBR3[-20:]        
         self.wFBR3.xTemp.plot(self.TimeTemperature,self.Tmp_PBR3), self.wFBR3.xTemp.grid(True)
-        self.wFBR3.lineTemp.draw()   
+        self.wFBR3.lineTemp.draw()
+        
+          
+        # Update excel File
+        time = datetime.datetime.now()
+        time = time.strftime("%H.%M.%S")
+        self.start_row_Temperature_Control += 1
+        self.update_excel_file_temperature(sheet=self.start_row_Temperature_Control,Time=time, Temperature_PBR1=self.Tmp_PBR1, Temperature_PBR2=self.Tmp_PBR2, Temperature_PBR3=self.Tmp_PBR3)
+        
+        
+        
         
         
     
@@ -515,19 +626,16 @@ class Main():
         self.wFBR3.xIin.set_ylim([0, 1500])
         self.wFBR3.lineIin.draw()
         
-        
-        
         # Update excel File
         time = datetime.datetime.now()
         time = time.strftime("%H.%M.%S")
-        self.start_row += 1
-        print("Contador",self.start_row)
-        self.update_excel_file(sheet=self.start_row,Time=time, Intensity_PBR1=self.Intensity_PBR1)
+        self.start_row_Ligt_Control += 1
+        self.update_excel_file_Light(sheet=self.start_row,Time=time, Intensity_PBR1=self.Intensity_PBR1, Intensity_PBR2=self.Intensity_PBR2, Intensity_PBR3=self.Intensity_PBR3)
         
     
             
     
-    def monitoring(self):
+    def I2C_monitoring(self):
    
         delay = 0
         # start monitoring 
@@ -679,6 +787,15 @@ class Main():
 
         self.wFBR3.xpH.set_ylim(0, 14)
         self.wFBR3.linepH.draw()
+        
+        ########################################################################
+        # Update excel File
+        time = datetime.datetime.now()
+        time = time.strftime("%H.%M.%S")
+        self.start_row_IC2_monitoring += 1
+        self.update_excel_file_I2C(sheet=self.start_row_IC2_monitoring,Time=time, ph_PBR1=pH_real_PBR1, ph_PBR2=pH_real_PBR2, ph_PBR3=pH_real_PBR3, DO_PBR1=DO_real_PBR1, DO_PBR2=DO_real_PBR2, DO_PBR3=DO_real_PBR3)
+        
+        
         
     
     def f_acerca(self):
