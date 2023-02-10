@@ -1,22 +1,61 @@
 import datetime
-from openpyxl import Workbook as Data_File
-from openpyxl import load_workbook
+import xlsxwriter
+import time
+import openpyxl
 
 
-wb = Data_File()
-now = datetime.datetime.now()
-date_time = now.strftime("%d.%m.%Y")
+Excel_Date = datetime.datetime.now()
+print(Excel_Date)
 
-try:
-    wb = load_workbook(filename = 'Data_File.xlsx')
-    wb.save("Data_File_II.xlsx")
-    wb = load_workbook(filename = 'Data_File_II.xlsx')
+today = Excel_Date.strftime("%h.%d.%Y")
+Hours = Excel_Date.strftime("%H.%M.%S")
 
-except:
-    wb.save("Data_File.xlsx")
-    wb = load_workbook(filename = 'Data_File.xlsx')
+workbook = xlsxwriter.Workbook('Data_'+ Hours +"_"+ today +'.xlsx')
+bold = workbook.add_format({'bold': True})
+x=0
+worksheet = workbook.add_worksheet()
 
-#Select the current active sheet
+worksheet.write('A1', 'Time', bold)
+worksheet.write('B1', 'Light Intensity', bold)
+
+sheet = workbook.sheet_name
+# Get a reference to the sheet you want to rename
+sheet = workbook._add_sheet("Day 1")
+
+
+
+# save changes to workbook
+workbook.close()
+
+
+def update_excel_file(sheet):
+    print(Excel_Date)
+    time = datetime.datetime.now()
+    time = time.strftime("%H.%M.%S")
+    # Load the Excel workbook
+    workbook = openpyxl.load_workbook('Data_'+ Hours +"_"+ today +'.xlsx')
+    # Select the active worksheet
+    worksheet = workbook.active
+    # Update a cell value
+    worksheet["A" + str(sheet)] = time
+    worksheet["B" + str(sheet)] = "Updated Value" + str(sheet)
+    
+    # Save the workbook
+    workbook.save('Data_'+ Hours +"_"+ today +'.xlsx')
+    
+
+i=2
+while True:
+    i=i+1
+    time.sleep(1)
+    Hours = Excel_Date.strftime("%H.%M.%S")
+    worksheet.write('A'+str(i), Hours, bold)
+    update_excel_file(i)
+    
+    print(Hours)
+
+
+
 
 
 

@@ -26,8 +26,8 @@ Labjack1 = Ljm1() #LIB
 Labjack2 = Ljm2() #LIB
 
 # Library to export data
-from openpyxl import load_workbook as load_excel_file
-from openpyxl import Workbook
+import xlsxwriter
+import openpyxl
 
 
 
@@ -170,6 +170,7 @@ class threads:
     pass
 
 class Main():
+    
     def __init__(self):
         self.root = tk.Tk()
         # Icono
@@ -278,11 +279,25 @@ class Main():
         self.Tmp_PBR2=[]
         self.Tmp_PBR3=[]
         
-        # Create  aExcel Boot to save data
-        wb = load_excel_file("Data_Excel")
-        
-        
+        # Create  Excel Boot to save data
+        self.Excel_Date = datetime.datetime.now()
+        self.today = self.Excel_Date.strftime("%h.%d.%Y") ############
+        self.Hours = self.Excel_Date.strftime("%H.%M.%S") ############
 
+        workbook = xlsxwriter.Workbook('Data_'+ self.Hours +"_"+ self.today +'.xlsx')
+        bold = workbook.add_format({'bold': True})
+        worksheet = workbook.add_worksheet()
+
+        worksheet.write('A1', 'Time', bold)
+        worksheet.write('B1', 'Light Intensity', bold)
+        # Temporal
+        self.b =1
+        self.start_row =1
+
+        # save changes to workbook
+        workbook.close()
+
+        
         # Here is the start buttons
         
         tk.Button(text="Start",command=self.star_FBR,width=30).place(x=80,y=435)
@@ -290,14 +305,16 @@ class Main():
         
     
     def MyThread(self, a):
-            # start threads
-            global b
-            print('Count:', a)
-            print('suma')
-            print('suma 2')
-            #print(th.isDaemon())
-            a += 1
-            time.sleep(1)
+        # start threads
+        
+        print('Count:', self.b)
+        print('suma')
+        print('suma 2')
+        #print(th.isDaemon())
+        self.b += 1 ###################
+        
+        
+        time.sleep(1)
     
     
     def star_FBR(self): 
@@ -307,7 +324,7 @@ class Main():
         self.th = continuous_threading.ContinuousThread(target=self.MyThread, args=[0] ) #Defining the thread as continuos thread in a loop
         self.th2 = continuous_threading.ContinuousThread(target=self.monitoring) #Defining the thread as continuos thread in a loop
         self.th3 = continuous_threading.PeriodicThread(1,target=self.nivel_monitoring) #Defining the thread as periodic thread in a loop
-        self.th4 = continuous_threading.PeriodicThread(1,target=self.Light_control) #Defining the thread as periodic thread in a loop
+        self.th4 = continuous_threading.PeriodicThread(1,target=self.Light_control, args=[10] ) #Defining the thread as periodic thread in a loop
         self.th5 = continuous_threading.PeriodicThread(pid_temperature_executiontime,target=self.temperature_control, args=[pid_temperature_executiontime]) #Defining the thread as periodic thread in a loop
         # self.th.daemon = True # Set thread to daemon
         #print(self.th.is_running)
@@ -339,7 +356,19 @@ class Main():
         self.wFBR2.__main__(self.tab_FBR2)
         self.wFBR3.__main__(self.tab_FBR3)
         
-         
+    def update_excel_file(self, sheet,Time, Intensity_PBR1):
+        
+        # Load the Excel workbook
+        workbook = openpyxl.load_workbook('Data_'+ self.Hours +"_"+ self.today +'.xlsx')
+        # Select the active worksheet
+        worksheet = workbook.active
+        # Update a cell value
+        worksheet["A" + str(sheet)] = Time
+        worksheet["B" + str(sheet)] = str(Intensity_PBR1)
+        
+        # Save the workbook
+        workbook.save('Data_'+ self.Hours +"_"+ self.today +'.xlsx')
+       
     def nivel_monitoring(self):
         # Nivel PBR1
         voltaje_Nivel_PBR1 = float(Labjack2.readValue('AIN0'))
@@ -444,13 +473,13 @@ class Main():
         
         
     
-    def Light_control(self):
+    def Light_control(self, start_row):
          # Append time vector
         self.TimeIin.append(datetime.datetime.now())
         self.TimeIin=self.TimeIin[-20:]
         
         # PBR1
-        self.Intensity_PBR1 = (Labjack1.readValue('AIN5')-0.39)*100000 #Read analoge input
+        self.Intensity_PBR1 = (Labjack1.readValue('AIN5')-0.39)*10000 #Read analoge input
         self.wFBR1.xIin.clear()
         self.wFBR1.xIin.grid(True),self.wFBR1.xIin.set_xlabel('$Time$'),self.wFBR1.xIin.set_ylabel('$\mu mol \cdot m^{-2} \cdot s^{-1}$')
         # Append Light vector
@@ -462,7 +491,7 @@ class Main():
         self.wFBR1.lineIin.draw()
         
         # PBR2
-        self.Intensity_PBR2 = (Labjack1.readValue('AIN13')-0.39)*100000 #Read analoge input
+        self.Intensity_PBR2 = (Labjack1.readValue('AIN13')-0.39)*10000 #Read analoge input
         self.wFBR2.xIin.clear()
         self.wFBR2.xIin.grid(True),self.wFBR2.xIin.set_xlabel('$Time$'),self.wFBR2.xIin.set_ylabel('$\mu mol \cdot m^{-2} \cdot s^{-1}$')
         # Append Light vector
@@ -475,7 +504,7 @@ class Main():
         
         
         # PBR3
-        self.Intensity_PBR3 = (Labjack1.readValue('AIN9')-0.39)*100000 #Read analoge input
+        self.Intensity_PBR3 = (Labjack1.readValue('AIN9')-0.39)*10000 #Read analoge input
         self.wFBR3.xIin.clear()
         self.wFBR3.xIin.grid(True),self.wFBR1.xIin.set_xlabel('$Time$'),self.wFBR1.xIin.set_ylabel('$\mu mol \cdot m^{-2} \cdot s^{-1}$')
         # Append Light vector
@@ -486,10 +515,17 @@ class Main():
         self.wFBR3.xIin.set_ylim([0, 1500])
         self.wFBR3.lineIin.draw()
         
-    
         
- 
+        
+        # Update excel File
+        time = datetime.datetime.now()
+        time = time.strftime("%H.%M.%S")
+        self.start_row += 1
+        print("Contador",self.start_row)
+        self.update_excel_file(sheet=self.start_row,Time=time, Intensity_PBR1=self.Intensity_PBR1)
+        
     
+            
     
     def monitoring(self):
    
