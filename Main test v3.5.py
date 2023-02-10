@@ -21,18 +21,19 @@ import datetime
 
 from PID import PID_Event_Based
 
-# Intances for the Labjacks, and starting the comunication
-Labjack1 = Ljm1() #LIB
-Labjack2 = Ljm2() #LIB
+
 
 # Library to export data
 import xlsxwriter
 import openpyxl
 
+# Library to append data avoiding diferences in sizes
+from collections import deque
 
 
-
-
+# Intances for the Labjacks, and starting the comunication
+Labjack1 = Ljm1() #LIB
+Labjack2 = Ljm2() #LIB
 
 class Window_FBR:
     def __init__(self,tab):
@@ -249,21 +250,27 @@ class Main():
 
         #Start storage variables
         # Global variables 
-        self.Time_PBR1=[] 
-        self.Time_PBR2=[]
-        self.Time_PBR3=[]
+        MAX_SIZE = 50  # Maximum size of the list
+        self.Time_PBR1_pH=deque([datetime.datetime.now()], maxlen=MAX_SIZE)
+        self.Time_PBR1_DO=deque([datetime.datetime.now()], maxlen=MAX_SIZE)
+        self.Time_PBR2_pH=deque([datetime.datetime.now()], maxlen=MAX_SIZE)
+        self.Time_PBR2_DO=deque([datetime.datetime.now()], maxlen=MAX_SIZE)
+        self.Time_PBR3_pH=deque([datetime.datetime.now()], maxlen=MAX_SIZE)
+        self.Time_PBR3_DO=deque([datetime.datetime.now()], maxlen=MAX_SIZE)
         
-        self.pH_PBR1=[]
-        self.pH_PBR2=[]
-        self.pH_PBR3=[]
+                       
+        self.pH_PBR1=deque([0], maxlen=MAX_SIZE)
+        self.pH_PBR2=deque([0], maxlen=MAX_SIZE)
+        self.pH_PBR3=deque([0], maxlen=MAX_SIZE)
         
-        self.DO_PBR1=[]
-        self.DO_PBR2=[]
-        self.DO_PBR3=[]
+        self.DO_PBR1=deque([0], maxlen=MAX_SIZE)
+        self.DO_PBR2=deque([0], maxlen=MAX_SIZE)
+        self.DO_PBR3=deque([0], maxlen=MAX_SIZE)
         
         self.lvl_PBR1=[]
         self.lvl_PBR2=[]
         self.lvl_PBR3=[]
+        
         self.Timelvl_PBR1=[]
         self.Timelvl_PBR2=[]
         self.Timelvl_PBR3=[]
@@ -283,6 +290,9 @@ class Main():
         self.Excel_Date = datetime.datetime.now()
         self.today = self.Excel_Date.strftime("%h.%d.%Y") ############
         self.Hours = self.Excel_Date.strftime("%H.%M.%S") ############
+        
+        # Define the time after which you want to add a sheet
+        self.add_sheet_time = datetime.datetime.strptime("00:01:00", "%H:%M:%S").time()
 
         ### Create Light Excel Workbook
         workbook = xlsxwriter.Workbook('Light_'+ self.Hours +"_"+ self.today +'.xlsx')
@@ -399,6 +409,7 @@ class Main():
         self.wFBR1.__main__(self.tab_FBR1)
         self.wFBR2.__main__(self.tab_FBR2)
         self.wFBR3.__main__(self.tab_FBR3)
+        
         
         
     def update_excel_file_Light(self, sheet, Time, Intensity_PBR1, Intensity_PBR2, Intensity_PBR3):
@@ -652,17 +663,25 @@ class Main():
         except:
             DO_real_PBR1=self.DO_PBR1.pop() #las value
             print("Error de lectura DO PBR1")
+        else:     # The else block lets you execute code when there is no error.
+            pass
+        finally:  # Block lets you execute code, regardless of the result of the try- and except block
+            pass
+        
         
         print('DO1',DO_real_PBR1)
         self.wFBR1.xDO.clear()
         self.wFBR1.xDO.set_xlabel('$Time$'),self.wFBR1.xDO.set_ylabel('$mg \cdot L^{-1}$')
-        # Appendings dataset
-        self.Time_PBR1.append(datetime.datetime.now())
-        self.DO_PBR1.append(DO_real_PBR1)
-        # Limiting the list to be 20
-        self.Time_PBR1=self.Time_PBR1[-20:]
-        self.DO_PBR1=self.DO_PBR1[-20:]
-        self.wFBR1.xDO.plot(self.Time_PBR1,self.DO_PBR1), self.wFBR1.xDO.grid(True)
+        
+        # Comparing len        
+        if len(self.Time_PBR1_DO) == len(self.DO_PBR1):
+            self.wFBR1.xDO.plot(self.Time_PBR1_DO,self.DO_PBR1), self.wFBR1.xDO.grid(True)
+        elif len(self.Time_PBR1_DO) > len(self.DO_PBR1):
+            self.Time_PBR1_DO.popleft()  # remove the first value if the list is full
+        else:
+            self.DO_PBR1.popleft()
+        # apending data
+        self.Time_PBR1_DO.append(datetime.datetime.now()), self.DO_PBR1.append(DO_real_PBR1)
         self.wFBR1.xDO.set_ylim(0, 50)
         self.wFBR1.lineDO.draw()
     
@@ -682,11 +701,22 @@ class Main():
         print('pH1',pH_real_PBR1)
         self.wFBR1.xpH.clear()
         self.wFBR1.xpH.set_xlabel('$Time$'),self.wFBR1.xpH.set_ylabel('$pH$')
-        # appendings dataset
-        self.pH_PBR1.append(pH_real_PBR1) 
-        # Limiting the list to be 20
-        self.pH_PBR1=self.pH_PBR1[-20:]
-        self.wFBR1.xpH.plot(self.Time_PBR1,self.pH_PBR1), self.wFBR1.xpH.grid(True)
+        
+        # Comparing len        
+        if len(self.Time_PBR1_pH) == len(self.pH_PBR1):
+            self.wFBR1.xpH.plot(self.Time_PBR1_pH,self.pH_PBR1), self.wFBR1.xpH.grid(True)
+        elif len(self.Time_PBR1_pH) > len(self.pH_PBR1):
+            self.Time_PBR1_pH.popleft()  # remove the first value if the list is full
+        else:
+            self.pH_PBR1.popleft()
+        # apending data
+        self.Time_PBR1_DO.append(datetime.datetime.now()), self.DO_PBR1.append(DO_real_PBR1)
+        self.wFBR1.xDO.set_ylim(0, 50)
+        self.wFBR1.lineDO.draw()
+    
+        
+        
+        self.Time_PBR1_pH.append(datetime.datetime.now()), self.pH_PBR1.append(pH_real_PBR1) 
         self.wFBR1.xpH.set_ylim(0, 14)
         self.wFBR1.linepH.draw()
 
@@ -703,14 +733,18 @@ class Main():
         
         self.wFBR2.xDO.clear()
         self.wFBR2.xDO.set_xlabel('$Time$'),self.wFBR2.xDO.set_ylabel('$mg/L$')
-        # Appending dataset
-        self.Time_PBR2.append(datetime.datetime.now())
-        self.DO_PBR2.append(DO_real_PBR2)        
-        # Limiting the list to be 20
-        self.Time_PBR2=self.Time_PBR2[-20:]
-        self.DO_PBR2=self.DO_PBR2[-20:]
-        print('DO2',DO_real_PBR2)
-        self.wFBR2.xDO.plot(self.Time_PBR2,self.DO_PBR2), self.wFBR2.xDO.grid(True)
+        
+        # Comparing len        
+        if len(self.Time_PBR2_DO) == len(self.DO_PBR2):
+            self.wFBR2.xDO.plot(self.Time_PBR2_DO,self.DO_PBR2), self.wFBR2.xDO.grid(True)
+        elif len(self.Time_PBR2_DO) > len(self.DO_PBR2):
+            self.Time_PBR2_DO.popleft()  # remove the first value if the list is full
+        else:
+            self.DO_PBR2.popleft()
+        # apending data
+        
+        
+        self.Time_PBR2_DO.append(datetime.datetime.now()), self.DO_PBR2.append(DO_real_PBR2)  
         self.wFBR2.xDO.set_ylim(0, 50)
         self.wFBR2.lineDO.draw()
   
@@ -731,11 +765,15 @@ class Main():
         print('pH2', pH_real_PBR2)
         self.wFBR2.xpH.clear()
         self.wFBR2.xpH.set_xlabel('$Time$'),self.wFBR2.xpH.set_ylabel('$pH$')
-        # Appending data
-        self.pH_PBR2.append(pH_real_PBR2)
-        # Limiting the list to be 20
-        self.pH_PBR2=self.pH_PBR2[-20:]
-        self.wFBR2.xpH.plot(self.Time_PBR2,self.pH_PBR2), self.wFBR2.xpH.grid(True)
+        # Comparing len        
+        if len(self.Time_PBR2_pH) == len(self.pH_PBR2):
+            self.wFBR2.xpH.plot(self.Time_PBR2_pH,self.pH_PBR2), self.wFBR2.xpH.grid(True)
+        elif len(self.Time_PBR2_pH) > len(self.pH_PBR2):
+            self.Time_PBR2_pH.popleft()  # remove the first value if the list is full
+        else:
+            self.pH_PBR2.popleft()
+        # apending data
+        self.Time_PBR2_pH.append(datetime.datetime.now()), self.pH_PBR2.append(pH_real_PBR2)
         self.wFBR2.xpH.set_ylim(0, 14)
         self.wFBR2.linepH.draw()
         
@@ -755,13 +793,18 @@ class Main():
         print('DO3',DO_real_PBR3)
         self.wFBR3.xDO.clear()
         self.wFBR3.xDO.set_xlabel('$Time$'),self.wFBR3.xDO.set_ylabel('$mg/L$')
-        # Apending dataset
-        self.Time_PBR3.append(datetime.datetime.now())
-        self.DO_PBR3.append(DO_real_PBR3)
-        # Limiting the list to be 20
-        self.Time_PBR3=self.Time_PBR3[-20:]
-        self.DO_PBR3=self.DO_PBR3[-20:]
-        self.wFBR3.xDO.plot(self.Time_PBR3,self.DO_PBR3), self.wFBR3.xDO.grid(True)
+         
+        # Comparing len        
+        if len(self.Time_PBR3_DO) == len(self.DO_PBR3):
+            self.wFBR3.xDO.plot(self.Time_PBR3_DO,self.DO_PBR3), self.wFBR3.xDO.grid(True)
+        elif len(self.Time_PBR3_DO) > len(self.DO_PBR3):
+            self.Time_PBR3_DO.popleft()  # remove the first value if the list is full
+        else:
+            self.DO_PBR3.popleft()
+        # apending data
+        
+     
+        self.Time_PBR3_DO.append(datetime.datetime.now()), self.DO_PBR3.append(DO_real_PBR3)
         self.wFBR3.xDO.set_ylim(0, 50)
         self.wFBR3.lineDO.draw()
         
@@ -780,12 +823,16 @@ class Main():
         self.wFBR3.xpH.clear()
         self.wFBR3.xpH.set_xlabel('$Time$'),self.wFBR3.xpH.set_ylabel('$pH$')
         print('pH3', pH_real_PBR3)
-        # Apending data
-        self.pH_PBR3.append(pH_real_PBR3)
-        # Limiting the list to be 20
-        self.pH_PBR3=self.pH_PBR3[-20:]
-        self.wFBR3.xpH.plot(self.Time_PBR3,self.pH_PBR3), self.wFBR3.xpH.grid(True)
-
+        # Comparing len        
+        if len(self.Time_PBR3_pH) == len(self.pH_PBR3):
+            self.wFBR3.xpH.plot(self.Time_PBR3_pH, self.pH_PBR3), self.wFBR3.xpH.grid(True)
+        elif len(self.Time_PBR3_pH) > len(self.pH_PBR3):
+            self.Time_PBR3_pH.popleft()  # remove the first value if the list is full
+        else:
+            self.pH_PBR3.popleft()
+        # apending data
+        
+        self.Time_PBR3_pH.append(datetime.datetime.now()), self.pH_PBR3.append(pH_real_PBR3)
         self.wFBR3.xpH.set_ylim(0, 14)
         self.wFBR3.linepH.draw()
         
