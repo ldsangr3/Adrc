@@ -7,33 +7,50 @@
 
 from collections import deque
 from math import *
+from Integration import Runge_Kutta
 
 class ADRC:
-    def __init__(self, disturbance, plant_output, x_stimation, Control_singal, integral_): 
+    def __init__(self, disturbance, plant_output, x_stimation, Control_singal): 
         #Condiciones iniciales 
         self.disturbance = disturbance # Inicial disturbance
         self.Control_singal = Control_singal # Inicial control signal
         self.plant_output = plant_output # Inicial output
-        self.x_stimation = x_stimation #State stimation 
-        self.integral_ = integral_ #State stimation
+        self.x_stimation = x_stimation # State stimation 
+        self.integral_ = 0 # State stimation
+        
+        # Define a integrator
+        self.inte_x1 = Runge_Kutta()
+        self.inte_x2 = Runge_Kutta()
+        self.inte_x2 = Runge_Kutta()
+        
 
     def reset_controller (self):
         self.disturbance = 0 # Inicial disturbance
         self.Control_singal = 0 # Inicial control signal
         self.plant_output = 0 # Inicial output
-        self.x_stimation = 0 #State stimation 
-        self.integral_ = 0 #State stimation
+        self.x_stimation = 0 # State stimation 
+        self.integral_ = 0 # State stimation
     
-    #x_p is the state to integrate
-    def integral(self, integral_previous, x_p, x_pp):
-        h=0.1 # Fixed time for now t(n)-t(n-1) elapsed time
-        integral_Gain=1
-        integral = self.integral_previous + integral_Gain*h*(self.x_p+self.x_pp)/2 #Trapezoidal method
-        return integral    
+
     
 
     def observer(self, y, u):
-        L1=1
-        e=1
-        disturbance_p = u + L1*e
-        return disturbance_p
+        # Define the function for the ADRC controller
+        
+        # Calculate the control input
+        u = alpha * error + x2
+        # Update the state variables
+        x1_dot = error - y
+        x2_dot = -lambda_ * y + beta * u
+        x1 = self.inte_x1.update_integrated_signal(signal=x1_dot, dt=1)
+        x2 = self.inte_x2.update_integrated_signal(signal=x2_dot, dt=1)
+        return u, x1, x2
+        
+    def get_x1(self):
+        return self.y_ast
+
+    def get_x2(self):
+        return self.error
+
+    def get_(self):
+        return self.ui

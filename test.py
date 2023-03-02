@@ -1,11 +1,13 @@
-from collections import deque
+from Integration import Runge_Kutta
+import time
 
-MAX_SIZE = 100  # Maximum size of the list
-data = deque(maxlen=MAX_SIZE)
 
-# Adding elements to the list
-for i in range(1000):
-    data.append(i)
-
-# The list will only contain the last 100 elements
-print(len(data))  # Output: 100
+class Main():
+    Integral = Runge_Kutta()
+    i=0
+    while True:
+        Integrated = Integral.update_integrated_signal(signal=0.5,dt=0.1)
+        i+=1
+        time.sleep(0.1)
+        print("The Integral is", i*0.1, Integrated)
+        
