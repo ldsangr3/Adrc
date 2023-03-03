@@ -7,7 +7,8 @@ class PID_Event_Based:
     """
     Discrete PID control
     """
-    def __init__(self, P, I, D, Z, Integrator_max=100, Integrator_min=-100):
+    def __init__(self, P, I, D, Z, Integrator_max
+                 =100, Integrator_min=-100):
         
         # PID parameters
         
@@ -98,3 +99,4 @@ class PID_Event_Based:
     
     def getPropotional(self):
         return self.K
+    

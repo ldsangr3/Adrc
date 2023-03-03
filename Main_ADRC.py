@@ -243,9 +243,9 @@ class Main():
         
         
         # Instances ofs PIDs
-        self.PID_temp_PBR1 = PID_Event_Based (P=1.5, I=0.5, D=0.01, Z=0)
-        self.PID_temp_PBR2 = PID_Event_Based (P=2, I=0.2, D=0.02, Z=0)
-        self.PID_temp_PBR3 = PID_Event_Based (P=3, I=0.5, D=0.1, Z=0)         
+        self.PID_temp_PBR1 = PID_Event_Based (P=3, I=0.5, D=0.1, Z=1)
+        self.PID_temp_PBR2 = PID_Event_Based (P=3, I=0.5, D=0.1, Z=1)
+        self.PID_temp_PBR3 = PID_Event_Based (P=3, I=0.5, D=0.1, Z=1)         
         
 
         #Start storage variables
@@ -374,7 +374,7 @@ class Main():
     def star_FBR(self): 
         print('Starting or Resuming Threads')
         # Threads FBR
-        pid_temperature_executiontime=1
+        pid_temperature_executiontime=1 # Time of execution fo the temperature thread
         self.th = continuous_threading.ContinuousThread(target=self.MyThread, args=[0] ) #Defining the thread as continuos thread in a loop
         self.th2 = continuous_threading.ContinuousThread(target=self.I2C_monitoring) #Defining the thread as continuos thread in a loop
         self.th3 = continuous_threading.PeriodicThread(1,target=self.nivel_monitoring) #Defining the thread as periodic thread in a loop
@@ -545,10 +545,10 @@ class Main():
         
         # Setpoint
         self.PID_temp_PBR1.setPoint(self.wFBR1.Ref_tmp.get())
-        print("the setpoint is", self.PID_temp_PBR1.getPoint())
         # Call update function of the PID and send the value of the actual temperature
         UPID_Temp_PBR1 = self.PID_temp_PBR1.update(Temp_PBR1)
-        
+        print("the setpoint is", self.PID_temp_PBR1.getPoint())
+        print("the control values is",UPID_Temp_PBR1)     
         # Write the temperature computed value in the labjack
         Labjack1.sendValue('DAC0', np.interp(UPID_Temp_PBR1, [0, 100], [0, 5])) # Interp
         
@@ -557,12 +557,6 @@ class Main():
                 Labjack1.sendValue('CIO1',5)
         else:
                 Labjack1.sendValue('CIO1',0)
-        
-        
-        
-        
-        
-         
         
                 
                 
@@ -575,6 +569,24 @@ class Main():
         self.wFBR2.xTemp.plot(self.TimeTemperature,self.Tmp_PBR2), self.wFBR2.xTemp.grid(True)
         self.wFBR2.lineTemp.draw()   
         
+        # Control temp PBR2
+        
+        # Setpoint
+        self.PID_temp_PBR2.setPoint(self.wFBR2.Ref_tmp.get())
+        # Call update function of the PID and send the value of the actual temperature
+        UPID_Temp_PBR2 = self.PID_temp_PBR2.update(Temp_PBR2)
+        print("the setpoint is", self.PID_temp_PBR2.getPoint())
+        print("the control values is",UPID_Temp_PBR2)     
+        # Write the temperature computed value in the labjack
+        Labjack1.sendValue('DAC1', np.interp(UPID_Temp_PBR2, [0, 100], [0, 5])) # Interp
+        
+        # Turn on Cooler
+        if Temp_PBR2 > self.wFBR2.Ref_tmp.get(): 
+                Labjack1.sendValue('CIO2',5)
+        else:
+                Labjack1.sendValue('CIO2',0)
+        
+        
         # Temperature PBR3
         Temp_PBR3 = 55.56*Labjack1.readValue('AIN3') + 255.37 - 273.15 
         self.wFBR3.xTemp.clear()
@@ -583,6 +595,23 @@ class Main():
         self.Tmp_PBR3=self.Tmp_PBR3[-20:]        
         self.wFBR3.xTemp.plot(self.TimeTemperature,self.Tmp_PBR3), self.wFBR3.xTemp.grid(True)
         self.wFBR3.lineTemp.draw()
+
+        # Control temp PBR3
+        
+        # Setpoint
+        self.PID_temp_PBR3.setPoint(self.wFBR3.Ref_tmp.get())
+        # Call update function of the PID and send the value of the actual temperature
+        UPID_Temp_PBR3 = self.PID_temp_PBR3.update(Temp_PBR3)
+        print("the setpoint is", self.PID_temp_PBR3.getPoint())
+        print("the control values is",UPID_Temp_PBR3)     
+        # Write the temperature computed value in the labjack
+        Labjack1.sendValue('TDAC2', np.interp(UPID_Temp_PBR3, [0, 100], [0, 5])) # Interp
+        
+        # Turn on Cooler
+        if Temp_PBR3 > self.wFBR3.Ref_tmp.get(): #VENTILADOR ACTIVACIÓN DIGITAL
+                Labjack1.sendValue('CIO3',5)
+        else:
+                Labjack1.sendValue('CIO3',0)
         
           
         # Update excel File
