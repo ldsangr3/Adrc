@@ -7,8 +7,7 @@ class PID_Event_Based:
     """
     Discrete PID control
     """
-    def __init__(self, P, I, D, Z, Integrator_max
-                 =100, Integrator_min=-100):
+    def __init__(self, P, I, D, Z, Integrator_max=100, Integrator_min=-100):
         
         # PID parameters
         
@@ -45,14 +44,14 @@ class PID_Event_Based:
         
         # calculate the control signal
         self.up = self.K*(self.beta*self.y_ast - current_value)
-        self.ud = self.ad*self.ud -self.ad*self.K*self.N*(current_value - self.y_old)
+        self.ud = self.ad*self.ud - self.ad*self.K*self.N*(current_value - self.y_old)
                
 
         # Saturations
-        if self.ui > self.Integrator_max:
-            self.ui = self.Integrator_max
-        elif self.ui < self.Integrator_min:
-            self.ui = self.Integrator_min
+        #if self.ui > self.Integrator_max:
+        #    self.ui = self.Integrator_max
+        #elif self.ui < self.Integrator_min:
+        #    self.ui = self.Integrator_min
     
         
         # Control signal

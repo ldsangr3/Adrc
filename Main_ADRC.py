@@ -243,11 +243,10 @@ class Main():
         
         
         # Instances ofs PIDs
-        self.PID_temp_PBR1 = PID_Event_Based (P=3, I=0.5, D=0.1, Z=1)
-        self.PID_temp_PBR2 = PID_Event_Based (P=3, I=0.5, D=0.1, Z=1)
-        self.PID_temp_PBR3 = PID_Event_Based (P=3, I=0.5, D=0.1, Z=1)         
+        self.PID_temp_PBR1 = PID_Event_Based (P=15, I=5, D=0.7, Z=1)
+        self.PID_temp_PBR2 = PID_Event_Based (P=30, I=23, D=0.9, Z=1)
+        self.PID_temp_PBR3 = PID_Event_Based (P=10, I=10, D=1.5, Z=1)         
         
-
         #Start storage variables
         # Global variables 
         MAX_SIZE = 50  # Maximum size of the list
