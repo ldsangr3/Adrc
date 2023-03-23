@@ -7,7 +7,7 @@ class PID_Event_Based:
     """
     Discrete PID control
     """
-    def __init__(self, P, I, D, Z, Integrator_max=100, Integrator_min=-100):
+    def __init__(self, P, I, D, Z, Beta, Integrator_max=1000, Integrator_min=-1000):
         
         # PID parameters
         
@@ -24,7 +24,7 @@ class PID_Event_Based:
         self.N = 20
         
         # Initial values
-        self.beta=1
+        self.beta=Beta
         self.y_ast=0.0
         self.y_old=0
         self.error=0.0
@@ -33,38 +33,44 @@ class PID_Event_Based:
         self.ud=0.0
         
         # precalculated parameters
-        self.bi = self.K / self.Ti
+        self.bi = self.K*Z / self.Ti
+        self.ad = self.Td/(self.Td+self.N*Z)
+        self.bd = self.K*self.Td*self.N / (self.Td+self.N*Z)
         
     def update(self, current_value):
         """
-        Calculate PID output value for given reference input and feedback
+        #Calculate PID output value for given reference input and feedback
         """
+        
+        #calculated coefficients
+        
+        
         self.error = self.y_ast - current_value
-        self.ad = self.Td / (self.Td + self.N*self.DeltaTime)
+        
         
         # calculate the control signal
         self.up = self.K*(self.beta*self.y_ast - current_value)
-        self.ud = self.ad*self.ud - self.ad*self.K*self.N*(current_value - self.y_old)
+        self.ud = self.ad*self.ud - self.bd*(current_value - self.y_old)
                
 
         # Saturations
-        #if self.ui > self.Integrator_max:
-        #    self.ui = self.Integrator_max
-        #elif self.ui < self.Integrator_min:
-        #    self.ui = self.Integrator_min
+        if self.ui > self.Integrator_max:
+            self.ui = self.Integrator_max
+        elif self.ui < self.Integrator_min:
+            self.ui = self.Integrator_min
     
         
         # Control signal
         PID = self.ud + self.up + self.ui
         
         # Atuator saturations
-        if PID>=100:
-            PID=100
+        if PID>=1000:
+            PID=1000
         if PID <=0:
-            PID=0    
+            PID=-1000    
             
         # Update states
-        self.ui = self.ui + self.bi*self.DeltaTime*self.error
+        self.ui = self.ui + self.bi*self.error
         self.y_old = current_value
         
         return PID

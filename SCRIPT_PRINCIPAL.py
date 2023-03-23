@@ -792,6 +792,7 @@ class Main(): #CLASE PRINCIPAL DE ESTE SCRIPT
             if self.salida_luz3 <= 0:
                 self.salida_luz3 = 0
             tarjeta1.sendValue('TDAC5', interp(self.salida_luz3, [0, 100], [0, 5]))
+            
     #TEMPERATURA3
             referencia_temperatura3 = float(self.temperatura3.get())
             valor_temp3 = tarjeta1.readValue('AIN3')  ## Original AIN6 change
