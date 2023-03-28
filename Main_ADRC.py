@@ -255,9 +255,9 @@ class Main():
         
         
         # Instances ofs PIDs for temperature
-        self.PID_temp_PBR1 = PID_Event_Based (P=55, I=10, D=1, Z=1, Beta=1)
-        self.PID_temp_PBR2 = PID_Event_Based (P=15, I=5, D=0.7, Z=1, Beta=1)
-        self.PID_temp_PBR3 = PID_Event_Based (P=55, I=10, D=1, Z=1, Beta=1)  
+        self.PID_temp_PBR1 = PID_Event_Based (P=5, I=0.3, D=0.1, Z=0.3, Beta=1)
+        self.PID_temp_PBR2 = PID_Event_Based (P=3, I=1, D=0.7, Z=0.3, Beta=1)
+        self.PID_temp_PBR3 = PID_Event_Based (P=4, I=0.4, D=0.4, Z=0.3, Beta=1)  
         
         # # Instances ofs PIDs for Ligth
         self.PID_Light_PBR1 = PID_Event_Based (P=3, I=0.5, D=1, Z=0.3, Beta=1)
@@ -390,7 +390,7 @@ class Main():
     def star_FBR(self): 
         print('Starting or Resuming Threads')
         # Threads FBR
-        pid_temperature_executiontime=1 # Time of execution fo the temperature thread
+        pid_temperature_executiontime=0.3 # Time of execution fo the temperature thread
         pid_Light_executiontime=0.3 # Time of execution fo the Light thread
         self.th = continuous_threading.ContinuousThread(target=self.MyThread, args=[0] ) #Defining the thread as continuos thread in a loop
         self.th2 = continuous_threading.ContinuousThread(target=self.I2C_monitoring) #Defining the thread as continuos thread in a loop
@@ -550,6 +550,8 @@ class Main():
         self.TimeTemperature.append(datetime.datetime.now())
         self.TimeTemperature = self.TimeTemperature[-20:]
         
+        # https://labjack.com/pages/support?doc=%2Fdatasheets%2Faccessories%2Fei-1034-datasheet%2F
+        # °C = (55.56*volts) + 255.37 - 273.15
         
         # Temperature PBR1
         Temp_PBR1 = 55.56*Labjack1.readValue('AIN0') + 255.37 - 273.15 
@@ -580,7 +582,7 @@ class Main():
                 
                 
         # Temperature PBR2
-        Temp_PBR2 = 55.56*Labjack1.readValue('AIN1') + 255.37 - 273.15 
+        Temp_PBR2 = 55.56*Labjack1.readValue('AIN7') + 255.37 - 273.15 
         self.wFBR2.xTemp.clear()
         self.wFBR2.xTemp.set_xlabel('$Time$'), self.wFBR2.xTemp.set_ylabel('$°C$')
         self.Tmp_PBR2.append(Temp_PBR2)
