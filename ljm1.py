@@ -6,8 +6,6 @@ class Ljm1:
         self.handle = ''
         data=[]
         try:
-            #self.handle = ljm.openS('ANY', 'ANY', 'ANY')
-            #self.handle = ljm.openS('ANY', 'ANY', '470019870')
             self.handle = ljm.openS('ANY', 'ANY', '470019827')
         except:
             print('Connection error')
@@ -25,37 +23,6 @@ class Ljm1:
         ljm.eWriteName(self.handle, "I2C_SPEED_THROTTLE", 65516)
         ljm.eWriteName(self.handle, "I2C_OPTIONS", 0)
         ljm.eWriteName(self.handle, "I2C_SLAVE_ADDRESS", addr)
-
-##    def sendValueI2C(self, data):
-##        aBytes = [data]
-##        numBytes = len(aBytes)
-##        ljm.eWriteName(self.handle, "I2C_NUM_BYTES_TX", numBytes)
-##        ljm.eWriteName(self.handle, "I2C_NUM_BYTES_RX", 0)
-##
-##        ljm.eWriteNameByteArray(self.handle, "I2C_DATA_TX", numBytes, aBytes)
-##        ljm.eWriteName(self.handle, "I2C_GO", 1)
-
-##    def sendValueI2C(self, data):
-##        for ch in data:
-##            valor=int(ord(ch))
-##            aBytes = [68,44,valor]
-##            numBytes = len(aBytes)
-##            ljm.eWriteName(self.handle, "I2C_NUM_BYTES_TX", numBytes)
-##            ljm.eWriteName(self.handle, "I2C_NUM_BYTES_RX", 0)
-##        
-##            ljm.eWriteNameByteArray(self.handle, "I2C_DATA_TX", numBytes, aBytes)
-##            ljm.eWriteName(self.handle, "I2C_GO", 1)
-
-
-##    def sendValueI2C(self, data):             
-##        valor=int(ord(data))
-##        aBytes = [68,44,valor]
-##        numBytes = len(aBytes)
-##        ljm.eWriteName(self.handle, "I2C_NUM_BYTES_TX", numBytes)
-##        ljm.eWriteName(self.handle, "I2C_NUM_BYTES_RX", 0)
-##        ljm.eWriteNameByteArray(self.handle, "I2C_DATA_TX", numBytes, aBytes)
-##        ljm.eWriteName(self.handle, "I2C_GO", 1)
-
 
     def sendValueI2C(self, data):             
         aBytes = data
@@ -110,3 +77,7 @@ class Ljm1:
                 data.append(chr(int(bt)))
                 cont = cont + 1
         return data
+    
+    def close(self):
+        self.handle = ljm.close(self.handle)
+        

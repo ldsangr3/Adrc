@@ -3,11 +3,8 @@ import time
 
 class Ljm2:
     def __init__(self):
-        #data=[]
         self.handle = ''
         try:
-            #self.handle = ljm.openS('ANY', 'ANY', 'ANY')
-            #self.handle = ljm.openS('ANY', 'ANY', '470019827')
             self.handle = ljm.openS('ANY', 'ANY', '470019870')
         except:
             print('Connection error')
@@ -79,3 +76,7 @@ class Ljm2:
                 data.append(float(round(bt,3)))
                 cont = cont + 1
         return data
+    
+    def close(self):
+        self.handle = ljm.close(self.handle)
+    
