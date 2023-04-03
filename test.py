@@ -1,13 +1,12 @@
-from Integration import Runge_Kutta
-import time
+import tkinter as tk
 
+root = tk.Tk()
+root.title(" RR  Simple Text on Canvas")
 
-class Main():
-    Integral = Runge_Kutta()
-    i=0
-    while True:
-        Integrated = Integral.update_integrated_signal(signal=0.5,dt=0.1)
-        i+=1
-        time.sleep(0.1)
-        print("The Integral is", i*0.1, Integrated)
-        
+canvas = tk.Canvas(root, width=200, height=200)
+canvas.pack()
+
+# Draw text on the canvas at coordinates (x=50, y=50)
+canvas.create_text(50, 50, text="RRRRRR")
+
+root.mainloop()

@@ -4,6 +4,7 @@ import numpy as np #Numpy
 from ADRC import *
 import tkinter as tk #TKINTER ES PARA INTERFAZ GRÁFICA
 from tkinter import ttk # TTK
+from tkinter import Canvas
 
 
 import matplotlib.pyplot as plt #GRAHP LIBRARY
@@ -155,10 +156,8 @@ class Window_FBR:
         tk.Scale(tab,variable=self.Ref_lvl, from_ = 1, to = 25, orient = "horizontal",length=217,bg=('#BDBDBD')).place(x=80,y=305)
         ttk.Entry(tab, width=31, textvariable=self.Ref_lvl,font=("Helvetica",10)).place(x=80,y=345)
         
-            
         
-        
-     
+
    
 
             
@@ -197,6 +196,7 @@ class Main():
     
     def __init__(self):
         self.root = tk.Tk()
+        
         # Icono
         self.root.tk.call('wm', 'iconphoto', self.root._w, tk.PhotoImage(file='supervision.png'))
         # Configuratin of the wimdows
@@ -376,11 +376,18 @@ class Main():
         self.start_row_nivel_monitoring = 1
         self.start_row_IC2_monitoring = 1
         self.start_row_Temperature_Control = 1
+        
+        # Setpoint
+        
+        # Create an entry widget for the setpoint
+        self.entry_setpoint = ttk.Entry(self.root)
+        self.entry_setpoint.place(x=80, y=435)
+
        
         # Here is the start buttons
         
-        tk.Button(text="Start",command=self.star_FBR,width=30).place(x=80,y=435)
-        tk.Button(text="Stop",command=self.stop_FBR,width=30).place(x=80,y=465)
+        tk.Button(text="Start",command=self.star_FBR,width=30).place(x=80,y=435+150)
+        tk.Button(text="Stop",command=self.stop_FBR,width=30).place(x=80,y=465+150)
         
         # Initialize filter coefficients for level monitoring
         self.filter_order = 4
@@ -388,10 +395,35 @@ class Main():
         self.filter_b, self.filter_a = butter(self.filter_order, self.filter_cutoff, 'lowpass')
         
         #  Set the velocity e PMP
-        self.level_Peristaltic_PBR1=0
-        self.level_Peristaltic_PBR2=0
-        self.level_Peristaltic_PBR3=0
+        self.level_Peristaltic_PBR1=False
+        self.level_Peristaltic_PBR2=False
+        self.level_Peristaltic_PBR3=False
         
+        #setpoint    
+                
+        # Create a label object
+        tk.Label( text="Setpoint",font=("Helvetica",15), fg='white',bg=('#00205B')).place(x=10,y=400)
+        tk.Label( text="Ref:",font=("Helvetica",12), fg='white', bg=('#00205B')).place(x=10,y=430)
+        
+        
+        # Create a submit button
+        button_submit = ttk.Button(text="Submit", command=self.submit_setpoint)
+        button_submit.place(x=80, y=485)
+
+        # Create a label to display the setpoint
+        self.label_display_setpoint = ttk.Label(self.root, text="Current setpoint: NA")
+        self.label_display_setpoint.place(x=80, y=525)
+        
+
+    def submit_setpoint(self):
+        self.setpoint = self.entry_setpoint.get()
+        try:
+            self.setpoint = float(self.setpoint)
+            self.label_display_setpoint.config(text=f"Current setpoint: {self.setpoint}" + ' (10^9 cells)' )
+            # Use the setpoint value in your process
+            print(f"Current  setpoint value: {self.setpoint}")
+        except ValueError:
+            self.label_display_setpoint.config(text="Invalid setpoint value. Please enter a number.")
     
     def MyThread(self, a):
         # start threads
@@ -573,19 +605,19 @@ class Main():
         
         # Control conditions on or off peristaltic PMPS
         if (average_last_third_PBR1 > self.wFBR1.Ref_lvl.get()):
-            self.level_Peristaltic_PBR1=100
+            self.level_Peristaltic_PBR1=True
         else: 
-            self.level_Peristaltic_PBR1=0
+            self.level_Peristaltic_PBR1=False
             
         if (average_last_third_PBR2 > self.wFBR2.Ref_lvl.get()):
-            self.level_Peristaltic_PBR2=100
+            self.level_Peristaltic_PBR2=True
         else: 
-            self.level_Peristaltic_PBR2=0
+            self.level_Peristaltic_PBR2=False
             
         if (average_last_third_PBR3 > self.wFBR3.Ref_lvl.get()):
-            self.level_Peristaltic_PBR3=100
+            self.level_Peristaltic_PBR3=True
         else: 
-            self.level_Peristaltic_PBR3=0
+            self.level_Peristaltic_PBR3=False
         
         
        
@@ -786,13 +818,17 @@ class Main():
     
     def I2C_monitoring(self):
    
-        delay = 0.5
+        delay = 0.2
+        Response_time_pH = 0.9
+        Reponse_time_DO = 0.6
+        Response_time_Ezo = 0.3
+        
         # start monitoring 
         
         # DO PBR1
         Labjack1.initI2C(1, 0, 6) #EL OBJETO comunicación LLAMA AL MÉTODO initI2C (TX,RX,DIRECCIÓN)
-        Labjack1.sendValueI2C([82]) #EL OBJETO comunicación LLAMA AL MÉTODO sendValueI2C ([COMANDO ASCII]) EN CASO DE NECESITAR OTRA UTILIDAD VER MANUAL DEL SENSOR
-        time.sleep(0.6 + delay) #POR NADA DEL MUNDO SE PUEDE CAMBIAR ESTE RETARDO (VER MANUAL DEL SENSOR)
+        Labjack1.sendValueI2C([82], delay=Reponse_time_DO) #EL OBJETO comunicación LLAMA AL MÉTODO sendValueI2C ([COMANDO ASCII]) EN CASO DE NECESITAR OTRA UTILIDAD VER MANUAL DEL SENSOR
+        time.sleep(delay) #POR NADA DEL MUNDO SE PUEDE CAMBIAR ESTE RETARDO (VER MANUAL DEL SENSOR)
         
         # This is in case of a error in the comunication
         try:
@@ -806,7 +842,7 @@ class Main():
             pass
         
         
-        # print('DO1',DO_real_PBR1)
+        
         self.wFBR1.xDO.clear()
         self.wFBR1.xDO.set_xlabel('$Time$'),self.wFBR1.xDO.set_ylabel('$mg \cdot L^{-1}$')
         
@@ -825,8 +861,9 @@ class Main():
                 
         # pH PBR1
         Labjack1.initI2C(1, 0, 3)
-        Labjack1.sendValueI2C([82])#114
-        time.sleep(0.6 + delay) #POR NADA DEL MUNDO SE PUEDE CAMBIAR ESTE RETARDO (VER MANUAL DEL SENSOR)
+        Labjack1.sendValueI2C([82], delay=Response_time_pH)#114
+        
+        time.sleep(delay) #POR NADA DEL MUNDO SE PUEDE CAMBIAR ESTE RETARDO (VER MANUAL DEL SENSOR)
         
         # This is in case of a error in the comunication
         try:
@@ -859,8 +896,8 @@ class Main():
 
         # DO PBR2
         Labjack1.initI2C(1, 0, 5)
-        Labjack1.sendValueI2C([82])
-        time.sleep(0.6 + delay)
+        Labjack1.sendValueI2C([82], delay=Reponse_time_DO)
+        time.sleep(delay)
         # This is in case of a error in the comunication
         try:
             DO_real_PBR2=float(Labjack1.readValueI2C())
@@ -889,8 +926,8 @@ class Main():
         
         # pH PBR2
         Labjack1.initI2C(1, 0, 2)
-        Labjack1.sendValueI2C([82])#114
-        time.sleep(0.6 + delay)
+        Labjack1.sendValueI2C([82], delay=Response_time_pH) # Command to read
+        time.sleep(delay)
         
         # This is in case of a error in the comunication
         try:
@@ -917,8 +954,8 @@ class Main():
     
         # DO PBR3
         Labjack1.initI2C( 1, 0, 4)
-        Labjack1.sendValueI2C([82])
-        time.sleep(0.6 + delay)
+        Labjack1.sendValueI2C([82], delay=Reponse_time_DO)
+        time.sleep(delay)
         
         # This is in case of a error in the comunication
         try:
@@ -947,8 +984,8 @@ class Main():
         
         # pH PBR3
         Labjack1.initI2C(1, 0, 1)
-        Labjack1.sendValueI2C([82])#114
-        time.sleep(0.6 + delay)
+        Labjack1.sendValueI2C([82], delay=Response_time_pH) #114
+        time.sleep(delay)
         # This is in case of a error in the comunication
         try:
             pH_real_PBR3=float(Labjack1.readValueI2C())
@@ -985,60 +1022,90 @@ class Main():
         ########################################################################
         # Update control signals of peristaltic pumps
         ########################################################################
-        self.Dilution_rate_PBR1=self.level_Peristaltic_PBR1
-        self.Dilution_rate_PBR2=self.level_Peristaltic_PBR1
-        self.Dilution_rate_PBR3=self.level_Peristaltic_PBR1
+        self.Dilution_rate_PBR1=100
+        self.Dilution_rate_PBR2=75
+        self.Dilution_rate_PBR3=80
         
-        # Definir el valor del controlador
-        D_PBR1 = int(np.interp(self.Dilution_rate_PBR1, [0, 100], [0, 100]))
-        D_PBR2 = int(np.interp(self.Dilution_rate_PBR2, [0, 100], [0, 100]))
-        D_PBR3 = int(np.interp(self.Dilution_rate_PBR3, [0, 100], [0, 100])) 
+        # Definir el valor del controlador, maximal flow rate is 50.05 ml/min 
+        D_PBR1 = int(np.interp(self.Dilution_rate_PBR1, [0, 100], [0, 50.05]))
+        D_PBR2 = int(np.interp(self.Dilution_rate_PBR2, [0, 100], [0, 50.05]))
+        D_PBR3 = int(np.interp(self.Dilution_rate_PBR3, [0, 100], [0, 50.05])) 
         
 
-        #This commandas will maintain Constant flow rate DC,[ml/min],[min or *] <cr> [maintain this rate],[for this much time] 
+        #This commandas will maintain Constant flow rate DC,[ml/min],[for this much time] 
 
         # PBR1
         
-        # Crear el comando con el valor del controlador
-        comando_PBR1 = "DC," + str(D_PBR1) + ",*"
-        Labjack1.initI2C(1, 0, 7) #EL OBJETO comunicación LLAMA AL MÉTODO initI2C (TX,RX,DIRECCIÓN)
-        Labjack1.sendValueI2C([ord(character) for character in comando_PBR1]) #EL OBJETO comunicación LLAMA AL MÉTODO sendValueI2C ([COMANDO ASCII]) EN CASO DE NECESITAR OTRA UTILIDAD VER MANUAL DEL SENSOR
-        time.sleep(0.3 + delay) 
+        # First stop all the pummps 
         
-        Labjack1.initI2C(1, 0, 8) #EL OBJETO comunicación LLAMA AL MÉTODO initI2C (TX,RX,DIRECCIÓN)
-        Labjack1.sendValueI2C([88]) # X
-        Labjack1.sendValueI2C([ord(character) for character in "DC," + str(self.level_Peristaltic_PBR1) +",*"]) #EL OBJETO comunicación LLAMA AL MÉTODO sendValueI2C ([COMANDO ASCII]) EN CASO DE NECESITAR OTRA UTILIDAD VER MANUAL DEL SENSOR
-        time.sleep(0.3 + delay) 
+        
+        # Crear el comando con el valor del controlador
+        
+        Labjack1.initI2C(1, 0, 7) 
+        Labjack1.sendValueI2C([88], num_bytes_to_read=1, delay=Response_time_Ezo) # X
+        Labjack1.sendValueI2C([ord(character) for character in "DC," + str(D_PBR1) +",1"], num_bytes_to_read=1, delay=Response_time_Ezo)
         print("action PBR1", self.level_Peristaltic_PBR1)
         
         
         # PBR2
         # Crear el comando con el valor del controlador
-        comando_PBR2 = "DC," + str(D_PBR2) + ",*"
-        Labjack1.initI2C(1, 0, 9) #EL OBJETO comunicación LLAMA AL MÉTODO initI2C (TX,RX,DIRECCIÓN)
-        Labjack1.sendValueI2C([ord(character) for character in comando_PBR2]) #EL OBJETO comunicación LLAMA AL MÉTODO sendValueI2C ([COMANDO ASCII]) EN CASO DE NECESITAR OTRA UTILIDAD VER MANUAL DEL SENSOR
-        time.sleep(0.3 + delay) 
         
-        Labjack1.initI2C(1, 0, 10) #EL OBJETO comunicación LLAMA AL MÉTODO initI2C (TX,RX,DIRECCIÓN)
-        Labjack1.sendValueI2C([88]) # X
-        Labjack1.sendValueI2C([ord(character) for character in "DC," + str(self.level_Peristaltic_PBR2) +",*"]) #EL OBJETO comunicación LLAMA AL MÉTODO sendValueI2C ([COMANDO ASCII]) EN CASO DE NECESITAR OTRA UTILIDAD VER MANUAL DEL SENSOR
-        time.sleep(0.3 + delay) 
+        Labjack1.initI2C(1, 0, 9) 
+        Labjack1.sendValueI2C([88], num_bytes_to_read=1, delay=Response_time_Ezo) # X
+        Labjack1.sendValueI2C([ord(character) for character in "DC," + str(D_PBR2) +",1"], num_bytes_to_read=1, delay=Response_time_Ezo) #EL OBJETO comunicación LLAMA AL MÉTODO sendValueI2C ([COMANDO ASCII]) EN CASO DE NECESITAR OTRA UTILIDAD VER MANUAL DEL SENSOR
         print("action PBR2", self.level_Peristaltic_PBR2)
         
         #PBR3        
         # Crear el comando con el valor del controlador
-        comando_PBR3 = "DC," + str(D_PBR3) + ",*"
-        Labjack1.initI2C(1, 0, 11) #EL OBJETO comunicación LLAMA AL MÉTODO initI2C (TX,RX,DIRECCIÓN)
-        Labjack1.sendValueI2C([ord(character) for character in comando_PBR3]) #EL OBJETO comunicación LLAMA AL MÉTODO sendValueI2C ([COMANDO ASCII]) EN CASO DE NECESITAR OTRA UTILIDAD VER MANUAL DEL SENSOR
-        time.sleep(0.3 + delay) 
-                
-        Labjack1.initI2C(1, 0, 12) #EL OBJETO comunicación LLAMA AL MÉTODO initI2C (TX,RX,DIRECCIÓN)
-        Labjack1.sendValueI2C([88]) # X
-        Labjack1.sendValueI2C([ord(character) for character in "DC," + str(self.level_Peristaltic_PBR3) +",*"]) #EL OBJETO comunicación LLAMA AL MÉTODO sendValueI2C ([COMANDO ASCII]) EN CASO DE NECESITAR OTRA UTILIDAD VER MANUAL DEL SENSOR
-        time.sleep(0.3 + delay) 
+        
+        Labjack1.initI2C(1, 0, 11) 
+        Labjack1.sendValueI2C([88], num_bytes_to_read=1, delay=Response_time_Ezo) # X
+        Labjack1.sendValueI2C([ord(character) for character in "DC," + str(D_PBR3) +",1"], num_bytes_to_read=1, delay=Response_time_Ezo) #EL OBJETO comunicación LLAMA AL MÉTODO sendValueI2C ([COMANDO ASCII]) EN CASO DE NECESITAR OTRA UTILIDAD VER MANUAL DEL SENSOR
         print("action PBR3", self.level_Peristaltic_PBR3)
         
+        # PMP for level
+        # Continuous dispensing
+        comando_PBR = "D,*"
+        
+        Labjack1.initI2C(1, 0, 8) 
+        if (self.level_Peristaltic_PBR1==True):
+            Labjack1.sendValueI2C([ord(character) for character in comando_PBR], num_bytes_to_read=1, delay=Response_time_Ezo)
+        if (self.level_Peristaltic_PBR1==False): 
+            Labjack1.sendValueI2C([88], num_bytes_to_read=1, delay=Response_time_Ezo) # X  stop command  
+                       
+        Labjack1.initI2C(1, 0, 10)
+        if (self.level_Peristaltic_PBR2==True):
+            Labjack1.sendValueI2C([ord(character) for character in comando_PBR], num_bytes_to_read=1, delay=Response_time_Ezo)
+        if (self.level_Peristaltic_PBR2==False): 
+            Labjack1.sendValueI2C([88], num_bytes_to_read=1, delay=Response_time_Ezo) # X  stop command  
+         
+        Labjack1.initI2C(1, 0, 12)
+        if (self.level_Peristaltic_PBR3==True):
+            Labjack1.sendValueI2C([ord(character) for character in comando_PBR], num_bytes_to_read=1, delay=Response_time_Ezo)
+        if (self.level_Peristaltic_PBR3==False): 
+            Labjack1.sendValueI2C([88], num_bytes_to_read=1, delay=Response_time_Ezo) # X   stop command
+            
+               
+        """Ask for the maximal velocities if required 
+        """        
+        #comando_PBR = "DC,?"
+        #Labjack1.initI2C(1, 0, 7)
+        #Labjack1.sendValueI2C([ord(character) for character in comando_PBR], num_bytes_to_read=1, delay=Response_time_Ezo)
+        #max = Labjack1.readMaxI2CEZO()
+        #print("Max EZO1",max)
+        
 
+        #Labjack1.initI2C(1, 0, 9)
+        #Labjack1.sendValueI2C([ord(character) for character in comando_PBR], num_bytes_to_read=1, delay=Response_time_Ezo)
+        #max = Labjack1.readMaxI2CEZO()
+        #print("Max EZO2",max)
+        
+
+        #Labjack1.initI2C(1, 0, 11)
+        #Labjack1.sendValueI2C([ord(character) for character in comando_PBR], num_bytes_to_read=1, delay=Response_time_Ezo)
+        #max = Labjack1.readMaxI2CEZO()
+        #print("Max EZO3",max)
+        
         
         
         
