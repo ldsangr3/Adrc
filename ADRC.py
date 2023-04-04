@@ -4,53 +4,62 @@
 # y is the output
 # L1 and L2 are the gains of the observer
 
-
-from collections import deque
 from math import *
 from Integration import Runge_Kutta
+from LESO import LESO
 
 class ADRC:
-    def __init__(self, disturbance, plant_output, x_stimation, Control_singal): 
-        #Condiciones iniciales 
-        self.disturbance = disturbance # Inicial disturbance
-        self.Control_singal = Control_singal # Inicial control signal
-        self.plant_output = plant_output # Inicial output
-        self.x_stimation = x_stimation # State stimation 
-        self.integral_ = 0 # State stimation
+    def __init__(self, mu_max=2, plant_output=0, y_stimation=0, Control_singal_U=0, estimated_disturbance=0):
         
-        # Define a integrator
-        self.inte_x1 = Runge_Kutta()
-        self.inte_x2 = Runge_Kutta()
-        self.inte_x2 = Runge_Kutta()
+        # Initial conditions
         
+        self.e_xi = estimated_disturbance  # Initial disturbance
+        self.Control_singal = Control_singal_U  # Initial control signal
+        self.plant_output = plant_output  # Initial output
+        self.y_stimation = y_stimation  # State estimation
+        self.mu_max=mu_max # maximal dilution rate
+        self.integral = 0  # State estimation
 
-    def reset_controller (self):
-        self.disturbance = 0 # Inicial disturbance
-        self.Control_singal = 0 # Inicial control signal
-        self.plant_output = 0 # Inicial output
-        self.x_stimation = 0 # State stimation 
-        self.integral_ = 0 # State stimation
-    
+ 
 
-    
-
-    def observer(self, y, u):
-        # Define the function for the ADRC controller
+    def reset_controller(self):
+        # Reset the controller's state
+        self.e_xi = 0  # Initial disturbance
+        self.Control_singal = 0  # Initial control signal
+        self.plant_output = 0  # Initial output
+        self.y_stimation = 0  # State estimation
+        self.integral = 0  # State estimation
         
-        # Calculate the control input
-        u = alpha * error + x2
-        # Update the state variables
-        x1_dot = error - y
-        x2_dot = -lambda_ * y + beta * u
-        x1 = self.inte_x1.update_integrated_signal(signal=x1_dot, dt=1)
-        x2 = self.inte_x2.update_integrated_signal(signal=x2_dot, dt=1)
-        return u, x1, x2
+        # Create the observer instance
+        self.Observer = LESO()
+
+    def ComputeADRC(self, setpoint, y, K, dt):
+        """
+        Define the function for the ADRC controller.
+
+        :param y: plant output.
+        :param u: control input.
+        :param alpha: controller parameter.
+        :param lambda_: observer parameter.
+        :param beta: controller parameter.
+        :return: control input u, state estimates x1, and x2.
+        """
+        y_ast = setpoint
+        # Calculate the error
+        e = K*(y - y_ast) 
+        # Compute de auxiliary Control law
+        v = - e - self.e_xi
+        restricted_v = min(v, 0)  # Restricts the signal to be 0 or negative
         
-    def get_x1(self):
-        return self.y_ast
+        
+        # Call the observer 
+        self.e_xi=self.Observer.update_observer(y=y,v=restricted_v, dt=dt)
+        
+        D = - v / y
+        self.restricted_D = max(min(D, self.mu_max), 0)
+        return self.restricted_D 
 
-    def get_x2(self):
-        return self.error
+    def get_D(self):
+        return self.restricted_D
 
-    def get_(self):
-        return self.ui
+
