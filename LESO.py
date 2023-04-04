@@ -40,4 +40,9 @@ class LESO:
 
     def get_estimates(self):
         return self.x1, self.x2, self.x3
+    
+    def reset_LESO(self):
+        self.x1=0
+        self.x2=0
+        self.x3=0
 

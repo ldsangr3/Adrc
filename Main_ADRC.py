@@ -4,12 +4,12 @@ import numpy as np #Numpy
 from ADRC import *
 import tkinter as tk #TKINTER ES PARA INTERFAZ GRÁFICA
 from tkinter import ttk # TTK
-from tkinter import Canvas
+
 
 
 import matplotlib.pyplot as plt #GRAHP LIBRARY
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg #GUI CANVAS
-from scipy.signal import butter, filtfilt,  lfilter
+from scipy.signal import butter, lfilter
 
 # Image loading library
 from PIL import ImageTk, Image
@@ -22,7 +22,8 @@ import time
 import datetime
 
 from PID import PID_Event_Based
-
+from ADRC import ADRC
+from Models import Model_Microalgae
 
 
 # Library to export data
@@ -315,6 +316,19 @@ class Main():
         self.Tmp_PBR2=[]
         self.Tmp_PBR3=[]
         
+        #         
+        print('Creating ADRC instances')
+        # create ADRC isntances
+        self.ADRC_PBR1 = ADRC()
+        self.ADRC_PBR2 = ADRC()
+        self.ADRC_PBR3 = ADRC()
+        
+        print('Creating Microalgae Models')
+        self.MicroalgaePBR1 = Model_Microalgae(D=0,X=0.2,Q=8,S=100)
+        self.MicroalgaePBR2 = Model_Microalgae(D=0,X=0.2,Q=8,S=100)
+        self.MicroalgaePBR3 = Model_Microalgae(D=0,X=0.2,Q=8,S=100)
+            
+                
         # Create  Excel Boot to save data
         self.Excel_Date = datetime.datetime.now()
         self.today = self.Excel_Date.strftime("%h.%d.%Y") ############
@@ -378,6 +392,14 @@ class Main():
         self.start_row_Temperature_Control = 1
         
         # Setpoint
+        self.setpoint = 0
+        # Initial values of the plant response Inocolum
+         
+        self.y_PBR1 = 0.2
+        self.y_PBR2 = 0.2
+        self.y_PBR3 = 0.2
+        
+        
         
         # Create an entry widget for the setpoint
         self.entry_setpoint = ttk.Entry(self.root)
@@ -431,29 +453,71 @@ class Main():
         # This is executing but doing nothinbg
         time.sleep(1)
     
+    def ThreadADRC(self, dt):
+        print("No hago nada :O")
+        # Global self.setpoint
+        # Call the ADRC controller instances for PBR1, PBR2, and PBR3
+        
+        D_PBR1 = self.ADRC_PBR1.ComputeADRC(setpoint=self.setpoint, y=self.y_PBR1, K=15, dt=dt)
+        D_PBR2 = self.ADRC_PBR2.ComputeADRC(setpoint=self.setpoint, y=self.y_PBR2, K=15, dt=dt)
+        D_PBR3 = self.ADRC_PBR3.ComputeADRC(setpoint=self.setpoint, y=self.y_PBR3, K=15, dt=dt)
+
+        
+        # Update the Microalgae Models for PBR1, PBR2, and PBR3 with control_output
+        self.y_PBR1, newQ_Pbr1, newS_Pbr1 = self.MicroalgaePBR1.update_tertiolecta(D_PBR1, dt=dt)
+        self.y_PBR2, newQ_Pbr2, newS_Pbr2 = self.MicroalgaePBR2.update_tertiolecta(D_PBR2, dt=dt)
+        self.y_PBR3, newQ_Pbr3, newS_Pbr3 = self.MicroalgaePBR3.update_tertiolecta(D_PBR3, dt=dt)
+        
+        print(self.y_PBR1)
+        print(self.y_PBR2)
+        print(self.y_PBR3)
+        #
+        print("Dilution rates")
+        print(D_PBR1)
+        print(D_PBR2)
+        print(D_PBR3)
+        
+        
+
+         
+        
+        
+        
     
     def star_FBR(self): 
+        print('Creating ADRC instances')
+        # create ADRC isntances
+        
         print('Starting or Resuming Threads')
         N = 100 # Number of elements to be stored
         
         # Threads FBR
+        dt_ADRC = 0.01
+        self.ADRC = continuous_threading.PeriodicThread(dt_ADRC, target=self.ThreadADRC, args=[dt_ADRC])
         self.th = continuous_threading.ContinuousThread(target=self.MyThread, args=[0] ) #Defining the thread as continuos thread in a loop
         self.th2 = continuous_threading.ContinuousThread(target=self.I2C_monitoring) #Defining the thread as continuos thread in a loop
         self.th3 = continuous_threading.PeriodicThread(self.Nivel_executiontime, target=self.nivel_monitoring, args=[N]) #Defining the thread as periodic thread in a loop
         self.th4 = continuous_threading.PeriodicThread(self.pid_Light_executiontime, target=self.Light_control, args=[10] ) #Defining the thread as periodic thread in a loop
         self.th5 = continuous_threading.PeriodicThread(self.pid_temperature_executiontime, target=self.temperature_control, args=[self.pid_temperature_executiontime]) #Defining the thread as periodic thread in a loop
+        
         # self.th.daemon = True # Set thread to daemon
         #print(self.th.is_running)
         #if self.th.is_running == False:
+        self.ADRC.start()
         self.th.start()
         self.th2.start()
         self.th3.start()
         self.th4.start()
         self.th5.start()
-        #
+        
+        
+        
+        
             
     def stop_FBR(self):
         print('Pausing Threads')
+        self.ADRC.stop()
+        print('Pausing ADRC Thread')
         self.th.stop()
         print('Pausing My Thread')
         self.th2.stop()

@@ -19,6 +19,10 @@ class ADRC:
         self.y_stimation = y_stimation  # State estimation
         self.mu_max=mu_max # maximal dilution rate
         self.integral = 0  # State estimation
+        
+        
+        # Create the observer instance
+        self.Observer = LESO()
 
  
 
@@ -27,11 +31,10 @@ class ADRC:
         self.e_xi = 0  # Initial disturbance
         self.Control_singal = 0  # Initial control signal
         self.plant_output = 0  # Initial output
-        self.y_stimation = 0  # State estimation
-        self.integral = 0  # State estimation
         
-        # Create the observer instance
-        self.Observer = LESO()
+        
+        
+     
 
     def ComputeADRC(self, setpoint, y, K, dt):
         """

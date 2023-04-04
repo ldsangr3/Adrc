@@ -5,9 +5,9 @@
 # which can be calculated using the Runge-Kutta formula.
 
 class Runge_Kutta:
-    def __init__(self):
+    def __init__(self, initial_value=0):
         # Initialize the integrated signal to 0
-        self.integrated_signal = 0
+        self.integrated_signal = initial_value
 
     def update_integrated_signal(self, signal, dt):
         """
@@ -28,3 +28,4 @@ class Runge_Kutta:
         self.integrated_signal += (k1 + 2*k2 + 2*k3 + k4) / 6
 
         return self.integrated_signal
+
