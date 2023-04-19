@@ -7,7 +7,7 @@ class PID_Event_Based:
     """
     Discrete PID control
     """
-    def __init__(self, P, I, D, Z, Beta, Integrator_max=1000, Integrator_min=-1000):
+    def __init__(self, P, I, D, Z):
         
         # PID parameters
         
@@ -17,14 +17,12 @@ class PID_Event_Based:
         self.DeltaTime = Z
                 
 
-        self.Integrator_max=Integrator_max
-        self.Integrator_min=Integrator_min
        
         # filter coefficient
         self.N = 20
         
         # Initial values
-        self.beta=Beta
+        
         self.y_ast=0.0
         self.y_old=0
         self.error=0.0
@@ -33,7 +31,7 @@ class PID_Event_Based:
         self.ud=0.0
         
         # precalculated parameters
-        self.bi = self.K*Z / self.Ti
+        self.bi = (self.K*Z) / self.Ti
         self.ad = self.Td/(self.Td+self.N*Z)
         self.bd = self.K*self.Td*self.N / (self.Td+self.N*Z)
         
@@ -49,31 +47,24 @@ class PID_Event_Based:
         
         
         # calculate the control signal
-        self.up = self.K*(self.beta*self.y_ast - current_value)
+        self.up = self.K*self.error
         self.ud = self.ad*self.ud - self.bd*(current_value - self.y_old)
-               
-
-        # Saturations
-        if self.ui > self.Integrator_max:
-            self.ui = self.Integrator_max
-        elif self.ui < self.Integrator_min:
-            self.ui = self.Integrator_min
-    
-        
+   
         # Control signal
-        PID = self.ud + self.up + self.ui
+        u_PID = self.ud + self.up + self.ui
         
         # Atuator saturations
-        if PID>=1000:
-            PID=1000
-        if PID <=0:
-            PID=-1000    
+        if u_PID >= 100:
+            u_PID = 100
+        elif u_PID <= 0:
+            u_PID = 0
+
             
         # Update states
         self.ui = self.ui + self.bi*self.error
         self.y_old = current_value
         
-        return PID
+        return u_PID
 
     def setPoint(self,y_ast):
         """
@@ -103,5 +94,6 @@ class PID_Event_Based:
         return self.ud
     
     def getPropotional(self):
-        return self.K
-    
+        return self.up
+
+
