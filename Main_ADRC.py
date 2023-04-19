@@ -22,6 +22,7 @@ import time
 import datetime
 
 from PID import PID_Event_Based
+from PID_Continuo import PID_Realtime
 from ADRC import ADRC
 from Models import Model_Microalgae
 
@@ -89,7 +90,7 @@ class Window_FBR:
         
         #Figure Ligt
         self.xIin.grid(True),self.xIin.set_xlabel('$Time$'),self.xIin.set_ylabel('$\mu mol \cdot m^{-2} \cdot s^{-1}$')
-        self.xIin.set_ylim([0, 1500])
+        self.xIin.set_ylim([0, 600])
         self.lineIin = FigureCanvasTkAgg(frame_variable_Iin, tab_Light)
         self.lineIin.get_tk_widget().pack(side=tk.LEFT, fill=tk.BOTH,expand=1)
         
@@ -264,19 +265,18 @@ class Main():
         self.wFBR3 = Window_FBR(self.tab_FBR3)
         
         # Threads Execution times
-        self.pid_temperature_executiontime=0.3 # Time of execution fo the temperature thread
-        self.pid_Light_executiontime=0.3 # Time of execution fo the Light thread
+        self.pid_temperature_executiontime=0.01 # Time of execution fo the temperature thread
         self.Nivel_executiontime=0.1 # Time of execution fo the Nivel thread
         
         # Instances ofs PIDs for temperature
-        self.PID_temp_PBR1 = PID_Event_Based (P=5, I=0.3, D=0.1, Z=self.pid_temperature_executiontime, Beta=1)
-        self.PID_temp_PBR2 = PID_Event_Based (P=3, I=0.3, D=0.3, Z=self.pid_temperature_executiontime, Beta=1)
-        self.PID_temp_PBR3 = PID_Event_Based (P=4, I=0.4, D=0.4, Z=self.pid_temperature_executiontime, Beta=1)  
+        self.PID_temp_PBR1 = PID_Event_Based (P=10*6.48, I=20, D=2, Z=self.pid_temperature_executiontime)
+        self.PID_temp_PBR2 = PID_Event_Based (P=10*6.48, I=20, D=2, Z=self.pid_temperature_executiontime)
+        self.PID_temp_PBR3 = PID_Event_Based (P=10*6.48, I=20, D=2, Z=self.pid_temperature_executiontime)  
         
         # # Instances ofs PIDs for Ligth
-        self.PID_Light_PBR1 = PID_Event_Based (P=3, I=0.5, D=1, Z=self.pid_Light_executiontime, Beta=1)
-        self.PID_Light_PBR2 = PID_Event_Based (P=3, I=0.5, D=1, Z=self.pid_Light_executiontime, Beta=1)
-        self.PID_Light_PBR3 = PID_Event_Based (P=3, I=0.5, D=1, Z=self.pid_Light_executiontime, Beta=1)   
+        self.PID_Light_PBR1 = PID_Realtime (P=3, I=0.5, D=1)
+        self.PID_Light_PBR2 = PID_Realtime (P=3, I=0.5, D=1)
+        self.PID_Light_PBR3 = PID_Realtime (P=15, I=0.5, D=1)   
         
         #Start storage variables
         # Global variables 
@@ -436,6 +436,8 @@ class Main():
         self.label_display_setpoint = ttk.Label(self.root, text="Current setpoint: NA")
         self.label_display_setpoint.place(x=80, y=525)
         
+        print('Ready to start')
+        
 
     def submit_setpoint(self):
         self.setpoint = self.entry_setpoint.get()
@@ -454,7 +456,7 @@ class Main():
         time.sleep(1)
     
     def ThreadADRC(self, dt):
-        print("No hago nada :O")
+        # print("No hago nada :O")
         # Global self.setpoint
         # Call the ADRC controller instances for PBR1, PBR2, and PBR3
         
@@ -468,14 +470,14 @@ class Main():
         self.y_PBR2, newQ_Pbr2, newS_Pbr2 = self.MicroalgaePBR2.update_tertiolecta(D_PBR2, dt=dt)
         self.y_PBR3, newQ_Pbr3, newS_Pbr3 = self.MicroalgaePBR3.update_tertiolecta(D_PBR3, dt=dt)
         
-        print(self.y_PBR1)
-        print(self.y_PBR2)
-        print(self.y_PBR3)
+        #print(self.y_PBR1)
+        #print(self.y_PBR2)
+        #print(self.y_PBR3)
         #
-        print("Dilution rates")
-        print(D_PBR1)
-        print(D_PBR2)
-        print(D_PBR3)
+        #print("Dilution rates")
+        #print(D_PBR1)
+        #print(D_PBR2)
+        #print(D_PBR3)
         
         
 
@@ -497,8 +499,8 @@ class Main():
         self.th = continuous_threading.ContinuousThread(target=self.MyThread, args=[0] ) #Defining the thread as continuos thread in a loop
         self.th2 = continuous_threading.ContinuousThread(target=self.I2C_monitoring) #Defining the thread as continuos thread in a loop
         self.th3 = continuous_threading.PeriodicThread(self.Nivel_executiontime, target=self.nivel_monitoring, args=[N]) #Defining the thread as periodic thread in a loop
-        self.th4 = continuous_threading.PeriodicThread(self.pid_Light_executiontime, target=self.Light_control, args=[10] ) #Defining the thread as periodic thread in a loop
-        self.th5 = continuous_threading.PeriodicThread(self.pid_temperature_executiontime, target=self.temperature_control, args=[self.pid_temperature_executiontime]) #Defining the thread as periodic thread in a loop
+        self.th4 = continuous_threading.ContinuousThread(target=self.Light_control, args=[N] ) #Defining the thread as periodic thread in a loop
+        self.th5 = continuous_threading.PeriodicThread(self.pid_temperature_executiontime, target=self.temperature_control, args=[N]) #Defining the thread as periodic thread in a loop
         
         # self.th.daemon = True # Set thread to daemon
         #print(self.th.is_running)
@@ -697,14 +699,15 @@ class Main():
         
         
     
-    def temperature_control(self, z):
+    def temperature_control(self, N):
         #z is the time of execution of the thread
+        Min_PID = -100  # Minimal PID value acording tuning parameters
 
         #print("z = ", z)
         
         # append time temperature 
         self.TimeTemperature.append(datetime.datetime.now())
-        self.TimeTemperature = self.TimeTemperature[-20:]
+        self.TimeTemperature = self.TimeTemperature[-N:]
         
         # https://labjack.com/pages/support?doc=%2Fdatasheets%2Faccessories%2Fei-1034-datasheet%2F
         # °C = (55.56*volts) + 255.37 - 273.15
@@ -714,8 +717,10 @@ class Main():
         self.wFBR1.xTemp.clear()
         self.wFBR1.xTemp.set_xlabel('$Time$'), self.wFBR1.xTemp.set_ylabel('$°C$')
         self.Tmp_PBR1.append(Temp_PBR1)
-        self.Tmp_PBR1=self.Tmp_PBR1[-20:]        
-        self.wFBR1.xTemp.plot(self.TimeTemperature,self.Tmp_PBR1), self.wFBR1.xTemp.grid(True)
+        self.Tmp_PBR1=self.Tmp_PBR1[-N:]        
+        # Filter
+        filtered_temp_PBR1 = self.apply_butterworth_filter(self.Tmp_PBR1)
+        self.wFBR1.xTemp.plot(self.TimeTemperature, filtered_temp_PBR1), self.wFBR1.xTemp.grid(True)
         self.wFBR1.lineTemp.draw()
         
         # Control temp PBR1
@@ -723,11 +728,27 @@ class Main():
         # Setpoint
         self.PID_temp_PBR1.setPoint(self.wFBR1.Ref_tmp.get())
         # Call update function of the PID and send the value of the actual temperature
-        UPID_Temp_PBR1 = self.PID_temp_PBR1.update(Temp_PBR1)
-        #print("PBR1 the setpoint is", self.PID_temp_PBR1.getPoint())
-        #print("PBR1 the control values is",UPID_Temp_PBR1)     
+        # Control_Nivel on/off simply
+        # First computed the average of the last elements of the vectors
+        last_third_PBR1 = filtered_temp_PBR1[-(N//3):]
+        average_last_third_PBR1 = sum(last_third_PBR1) / len(last_third_PBR1)
+        UPID_Temp_PBR1 = self.PID_temp_PBR1.update(average_last_third_PBR1)
+        
+     
+        
+        print("PBR1 the error is", self.PID_temp_PBR1.getError())
+        print("PBR1 the control values is", UPID_Temp_PBR1)     
+        print("PBR1 the integration", self.PID_temp_PBR1.getIntegrator())
+        print("PBR1 the derivator is", self.PID_temp_PBR1.getDerivator())
+        print("PBR1 the proportional is", self.PID_temp_PBR1.getPropotional())
+        
+
+
+    
+    
+    
         # Write the temperature computed value in the labjack
-        Labjack1.sendValue('DAC0', np.interp(UPID_Temp_PBR1, [-1000, 1000], [0, 5])) # Interp
+        Labjack1.sendValue('DAC0', np.interp(UPID_Temp_PBR1, [0, 100], [0, 5])) # Interp
         
         # Turn on Cooler
         if Temp_PBR1 > self.wFBR1.Ref_tmp.get(): #VENTILADOR ACTIVACIÓN DIGITAL
@@ -742,8 +763,9 @@ class Main():
         self.wFBR2.xTemp.clear()
         self.wFBR2.xTemp.set_xlabel('$Time$'), self.wFBR2.xTemp.set_ylabel('$°C$')
         self.Tmp_PBR2.append(Temp_PBR2)
-        self.Tmp_PBR2=self.Tmp_PBR2[-20:]        
-        self.wFBR2.xTemp.plot(self.TimeTemperature,self.Tmp_PBR2), self.wFBR2.xTemp.grid(True)
+        self.Tmp_PBR2=self.Tmp_PBR2[-N:]
+        filtered_temp_PBR2 = self.apply_butterworth_filter(self.Tmp_PBR2)        
+        self.wFBR2.xTemp.plot(self.TimeTemperature, filtered_temp_PBR2), self.wFBR2.xTemp.grid(True)
         self.wFBR2.lineTemp.draw()   
         
         # Control temp PBR2
@@ -751,11 +773,13 @@ class Main():
         # Setpoint
         self.PID_temp_PBR2.setPoint(self.wFBR2.Ref_tmp.get())
         # Call update function of the PID and send the value of the actual temperature
-        UPID_Temp_PBR2 = self.PID_temp_PBR2.update(Temp_PBR2)
-        #print("PBR2 the setpoint is", self.PID_temp_PBR2.getPoint())
-        #print("PBR2 the control values is",UPID_Temp_PBR2)     
+        
+        last_third_PBR2 = filtered_temp_PBR2[-(N//3):]
+        average_last_third_PBR2 = sum(last_third_PBR2) / len(last_third_PBR2)
+        UPID_Temp_PBR2 = self.PID_temp_PBR2.update(average_last_third_PBR2)
+           
         # Write the temperature computed value in the labjack
-        Labjack1.sendValue('DAC1', np.interp(UPID_Temp_PBR2, [-1000, 1000], [0, 5])) # Interp
+        Labjack1.sendValue('DAC1', np.interp(UPID_Temp_PBR2, [0, 100], [0, 5])) # Interp
         
         # Turn on Cooler
         if Temp_PBR2 > self.wFBR2.Ref_tmp.get(): 
@@ -769,8 +793,9 @@ class Main():
         self.wFBR3.xTemp.clear()
         self.wFBR3.xTemp.set_xlabel('$Time$'), self.wFBR3.xTemp.set_ylabel('$°C$')
         self.Tmp_PBR3.append(Temp_PBR3)
-        self.Tmp_PBR3=self.Tmp_PBR3[-20:]        
-        self.wFBR3.xTemp.plot(self.TimeTemperature,self.Tmp_PBR3), self.wFBR3.xTemp.grid(True)
+        self.Tmp_PBR3=self.Tmp_PBR3[-N:]     
+        filtered_temp_PBR3 = self.apply_butterworth_filter(self.Tmp_PBR3)     
+        self.wFBR3.xTemp.plot(self.TimeTemperature, filtered_temp_PBR3), self.wFBR3.xTemp.grid(True)
         self.wFBR3.lineTemp.draw()
 
         # Control temp PBR3
@@ -778,11 +803,12 @@ class Main():
         # Setpoint
         self.PID_temp_PBR3.setPoint(self.wFBR3.Ref_tmp.get())
         # Call update function of the PID and send the value of the actual temperature
-        UPID_Temp_PBR3 = self.PID_temp_PBR3.update(Temp_PBR3)
-        #print("PBR3 the setpoint is", self.PID_temp_PBR3.getPoint())
-        #print("PBR3 the control values is",UPID_Temp_PBR3)     
-        # Write the temperature computed value in the labjack
-        Labjack1.sendValue('TDAC2', np.interp(UPID_Temp_PBR3, [-1000, 1000], [0, 5])) # Interp
+        last_third_PBR3 = filtered_temp_PBR3[-(N//3):]
+        average_last_third_PBR3 = sum(last_third_PBR3) / len(last_third_PBR3)
+        #print("Medido PBR3", average_last_third_PBR3)
+        UPID_Temp_PBR3 = self.PID_temp_PBR3.update(average_last_third_PBR3)
+
+        Labjack1.sendValue('TDAC2', np.interp(UPID_Temp_PBR3, [0, 100], [0, 5])) # Interp
         
         # Turn on Cooler
         if Temp_PBR3 > self.wFBR3.Ref_tmp.get(): #VENTILADOR ACTIVACIÓN DIGITAL
@@ -798,78 +824,92 @@ class Main():
         self.update_excel_file_temperature(sheet=self.start_row_Temperature_Control,Time=Time, Temperature_PBR1=Temp_PBR1, Temperature_PBR2=Temp_PBR2, Temperature_PBR3=Temp_PBR3)
         
     
-    def Light_control(self, Data_In):
+    def Light_control(self, N):
          # Append time vector
         self.TimeIin.append(datetime.datetime.now())
-        self.TimeIin=self.TimeIin[-20:]
+        self.TimeIin=self.TimeIin[-N:]
         
         # PBR1
-        self.Intensity_PBR1 = (Labjack1.readValue('AIN5')-0.39)*10000 #Read analoge input
+        self.Intensity_PBR1 = ((Labjack1.readValue('AIN5')-0.39)*10000)*8.85 - 990  #Read analoge input
         self.wFBR1.xIin.clear()
         self.wFBR1.xIin.grid(True),self.wFBR1.xIin.set_xlabel('$Time$'),self.wFBR1.xIin.set_ylabel('$\mu mol \cdot m^{-2} \cdot s^{-1}$')
         # Append Light vector
         self.Iin_PBR1.append(self.Intensity_PBR1)
         # Limits vector to have 20 elements
-        self.Iin_PBR1=self.Iin_PBR1[-20:] 
-        self.wFBR1.xIin.plot(self.TimeIin,self.Iin_PBR1)
-        self.wFBR1.xIin.set_ylim([0, 1500])
+        self.Iin_PBR1=self.Iin_PBR1[-N:] 
+        filtered_Iin_PBR1 = self.apply_butterworth_filter(self.Iin_PBR1)
+        self.wFBR1.xIin.plot(self.TimeIin, filtered_Iin_PBR1)
+        self.wFBR1.xIin.set_ylim([0, 600])
         self.wFBR1.lineIin.draw()
+        
+        
+        last_third_PBR1 = filtered_Iin_PBR1[-(N//3):]
+        average_last_third_PBR1 = sum(last_third_PBR1) / len(last_third_PBR1)
+        print("Medido luz PBR1", average_last_third_PBR1)
+        
         
         # Light Control PBR1
         # Setpoint
         self.PID_Light_PBR1.setPoint(self.wFBR1.Ref_luz.get())
-        # Call update function of the PID and send the value of the actual temperature
-        UPID_light_PBR1 = self.PID_Light_PBR1.update(self.Intensity_PBR1)
+        # Call update function of the PID 
+        UPID_light_PBR1 = self.PID_Light_PBR1.update(average_last_third_PBR1)
         #print("PBR1 the setpoint is", self.PID_temp_PBR1.getPoint())
         #print("PBR1 the control values is", UPID_light_PBR1)     
         # Write the temperature computed value in the labjack
-        Labjack1.sendValue('TDAC3', np.interp(UPID_light_PBR1, [-1000, 1000], [0, 5])) # Interp
+        Labjack1.sendValue('TDAC3', np.interp(UPID_light_PBR1, [0, 100], [0, 5])) # Interp
 
         
         # PBR2
-        self.Intensity_PBR2 = (Labjack1.readValue('AIN13')-0.39)*10000 #Read analoge input
+        self.Intensity_PBR2 = ((Labjack1.readValue('AIN13')-0.39)*10000 -112)*8.85 - 990  #Read analoge input
         self.wFBR2.xIin.clear()
         self.wFBR2.xIin.grid(True),self.wFBR2.xIin.set_xlabel('$Time$'),self.wFBR2.xIin.set_ylabel('$\mu mol \cdot m^{-2} \cdot s^{-1}$')
         # Append Light vector
         self.Iin_PBR2.append(self.Intensity_PBR2)
         # Limits vector to have 20 elements
-        self.Iin_PBR2=self.Iin_PBR2[-20:] 
+        self.Iin_PBR2=self.Iin_PBR2[-N:] 
         self.wFBR2.xIin.plot(self.TimeIin,self.Iin_PBR2)
-        self.wFBR2.xIin.set_ylim([0, 1500])
+        self.wFBR2.xIin.set_ylim([0, 600])
         self.wFBR2.lineIin.draw()
         
         # Light Control PBR2
         # Setpoint
         self.PID_Light_PBR2.setPoint(self.wFBR2.Ref_luz.get())
-        # Call update function of the PID and send the value of the actual temperature
+        # Call update function of the PID 
         UPID_light_PBR2 = self.PID_Light_PBR2.update(self.Intensity_PBR2)
         #print("PBR2 the setpoint is", self.PID_Light_PBR2.getPoint())
         #print("PBR2 the control values is", UPID_light_PBR2)     
         # Write the temperature computed value in the labjack
-        Labjack1.sendValue('TDAC4', np.interp(UPID_light_PBR2, [-1000, 1000], [0, 5])) # Interp
+        Labjack1.sendValue('TDAC4', np.interp(UPID_light_PBR2, [0, 100], [0, 5])) # Interp
         
         
         # PBR3
-        self.Intensity_PBR3 = (Labjack1.readValue('AIN9')-0.39)*10000 #Read analoge input
+        self.Intensity_PBR3 = ((Labjack1.readValue('AIN9')-0.39)*10000)*8.85 - 990 #Read analoge input
+        print("Intensity PBR3", self.Intensity_PBR3)
         self.wFBR3.xIin.clear()
         self.wFBR3.xIin.grid(True),self.wFBR1.xIin.set_xlabel('$Time$'),self.wFBR1.xIin.set_ylabel('$\mu mol \cdot m^{-2} \cdot s^{-1}$')
         # Append Light vector
         self.Iin_PBR3.append(self.Intensity_PBR3)
         # Limits vector to have 20 elements
-        self.Iin_PBR3=self.Iin_PBR3[-20:] 
-        self.wFBR3.xIin.plot(self.TimeIin,self.Iin_PBR3)
-        self.wFBR3.xIin.set_ylim([0, 1500])
+        self.Iin_PBR3=self.Iin_PBR3[-N:] 
+        filtered_Iin_PBR3 = self.apply_butterworth_filter(self.Iin_PBR3)
+        self.wFBR3.xIin.plot(self.TimeIin, filtered_Iin_PBR3)
+        self.wFBR3.xIin.set_ylim([0, 600])
         self.wFBR3.lineIin.draw()
         
         # Light Control PBR3
         # Setpoint
         self.PID_Light_PBR3.setPoint(self.wFBR3.Ref_luz.get())
-        # Call update function of the PID and send the value of the actual temperature
-        UPID_light_PBR3 = self.PID_Light_PBR3.update(self.Intensity_PBR3)
+               
+        last_third_PBR3 = filtered_Iin_PBR3[-(N//3):]
+        average_last_third_PBR3 = sum(last_third_PBR3) / len(last_third_PBR3)
+        print("Medido luz PBR3", average_last_third_PBR3)
+        
+        # Call update function of the PID 
+        UPID_light_PBR3 = self.PID_Light_PBR3.update(average_last_third_PBR3)
         #print("PBR3 the setpoint is", self.PID_Light_PBR3.getPoint())
         #print("PBR3 the control values is", UPID_light_PBR3)     
         # Write the temperature computed value in the labjack
-        Labjack1.sendValue('TDAC5', np.interp(UPID_light_PBR3, [-1000, 1000], [0, 5])) # Interp
+        Labjack1.sendValue('TDAC5', np.interp(UPID_light_PBR3, [0, 100], [0, 5])) # Interp
         
         # Update excel File
         Time = datetime.datetime.now()
@@ -1095,7 +1135,12 @@ class Main():
         D_PBR2 = int(np.interp(self.Dilution_rate_PBR2, [0, 100], [0, 50.05]))
         D_PBR3 = int(np.interp(self.Dilution_rate_PBR3, [0, 100], [0, 50.05])) 
         
-
+        #Convertir a litros por dia 72 listros por dia
+        #Reactor 3 litros, D es inverso de dias D = 72/3 = 24 
+        
+        #mu_max = 1.7
+        
+        
         #This commandas will maintain Constant flow rate DC,[ml/min],[for this much time] 
 
         # PBR1
@@ -1108,7 +1153,7 @@ class Main():
         Labjack1.initI2C(1, 0, 7) 
         Labjack1.sendValueI2C([88], num_bytes_to_read=1, delay=Response_time_Ezo) # X
         Labjack1.sendValueI2C([ord(character) for character in "DC," + str(D_PBR1) +",1"], num_bytes_to_read=1, delay=Response_time_Ezo)
-        print("action PBR1", self.level_Peristaltic_PBR1)
+        #print("action PBR1", self.level_Peristaltic_PBR1)
         
         
         # PBR2
@@ -1117,7 +1162,7 @@ class Main():
         Labjack1.initI2C(1, 0, 9) 
         Labjack1.sendValueI2C([88], num_bytes_to_read=1, delay=Response_time_Ezo) # X
         Labjack1.sendValueI2C([ord(character) for character in "DC," + str(D_PBR2) +",1"], num_bytes_to_read=1, delay=Response_time_Ezo) #EL OBJETO comunicación LLAMA AL MÉTODO sendValueI2C ([COMANDO ASCII]) EN CASO DE NECESITAR OTRA UTILIDAD VER MANUAL DEL SENSOR
-        print("action PBR2", self.level_Peristaltic_PBR2)
+        #print("action PBR2", self.level_Peristaltic_PBR2)
         
         #PBR3        
         # Crear el comando con el valor del controlador
@@ -1125,7 +1170,7 @@ class Main():
         Labjack1.initI2C(1, 0, 11) 
         Labjack1.sendValueI2C([88], num_bytes_to_read=1, delay=Response_time_Ezo) # X
         Labjack1.sendValueI2C([ord(character) for character in "DC," + str(D_PBR3) +",1"], num_bytes_to_read=1, delay=Response_time_Ezo) #EL OBJETO comunicación LLAMA AL MÉTODO sendValueI2C ([COMANDO ASCII]) EN CASO DE NECESITAR OTRA UTILIDAD VER MANUAL DEL SENSOR
-        print("action PBR3", self.level_Peristaltic_PBR3)
+        #print("action PBR3", self.level_Peristaltic_PBR3)
         
         # PMP for level
         # Continuous dispensing
