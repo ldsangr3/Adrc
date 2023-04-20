@@ -65,6 +65,12 @@ class PID_Event_Based:
         self.y_old = current_value
         
         return u_PID
+    
+    def reset(self):
+        self.up=0.0
+        self.ui=0.0
+        self.ud=0.0
+        #print("Reseting the controller")
 
     def setPoint(self,y_ast):
         """

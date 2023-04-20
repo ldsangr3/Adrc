@@ -37,8 +37,9 @@ class PID_Realtime:
         self.ud=0.0
         
         # Get monotonic time to ensure that time deltas are always positive
-        self._last_time = time.monotonic
-
+        self._last_time = time.monotonic()  # Initialize _last_time here
+        self._last_input = 0.0
+        self._last_error = 0.0
 
         
     def update(self, current_value):
@@ -55,9 +56,9 @@ class PID_Realtime:
             simulations when simulation time is different from real time.
         """
 
-        now = time.monotonic
+        now = time.monotonic()
         
-        dt = now - self._last_time if (now - self._last_time) else 1e-16
+        dt = now - self._last_time if (now - self._last_time) != 0 else 1e-16
         
         # Compute error terms
         error = self.y_ast - current_value
@@ -76,10 +77,10 @@ class PID_Realtime:
         else:
             self.ud = self.Td * d_error / dt
 
-
+        u_PID = self.up + self.ud + self.ui
            
         # Keep track of state
-        self.ui = self.ui + self.up + self.ud
+        
         self._last_input = current_value
         self._last_error = error
         self._last_time = now

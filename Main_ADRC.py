@@ -24,6 +24,7 @@ import datetime
 from PID import PID_Event_Based
 from PID_Continuo import PID_Realtime
 from ADRC import ADRC
+from ADRC_II import ADRC_II
 from Models import Model_Microalgae
 
 
@@ -143,6 +144,7 @@ class Window_FBR:
                             
         self.Ref_luz=tk.DoubleVar(master=tab)
         tk.Scale(tab,variable=self.Ref_luz, from_ = 1, to = 900, orient = "horizontal",length=217,bg=('#BDBDBD')).place(x=80,y=70)
+        
         ttk.Entry(tab, width=31, textvariable=self.Ref_luz,font=("Helvetica",10)).place(x=80,y=110)
         tk.Label(tab,text="Color Intensity",font=("Helvetica",15), fg='white', bg=('#00205B')).place(x=140,y=40)
         tk.Label(tab,text="Temperature",font=("Helvetica",15), fg='white', bg=('#00205B')).place(x=10,y=175)
@@ -228,6 +230,12 @@ class Main():
         menu_archivo.add_command(label="Save")
         menu_archivo.add_separator()
         menu_archivo.add_command(label="Exit", command=self.close)
+        
+        menu_edicion.add_command(label="Reset PID PBR1", command=self.PID_tmp_PBR1reset)
+        menu_edicion.add_command(label="Reset PID PBR2", command=self.PID_tmp_PBR2reset)
+        menu_edicion.add_command(label="Reset PID PBR3", command=self.PID_tmp_PBR3reset)
+        
+        
         menu_ayuda.add_command(label="Thanks",command=self.f_acerca) # f.acerca = MÉTODO CON LA FIGURA AGRADECIMIENTO
         menu_ayuda.add_command(label="About",command=self.f_about)   # f.about  = About method
         
@@ -267,35 +275,37 @@ class Main():
         # Threads Execution times
         self.pid_temperature_executiontime=0.01 # Time of execution fo the temperature thread
         self.Nivel_executiontime=0.1 # Time of execution fo the Nivel thread
+        self.Light_executiontime=2 # Time of execution fo the temperature thread
         
         # Instances ofs PIDs for temperature
-        self.PID_temp_PBR1 = PID_Event_Based (P=10*6.48, I=20, D=2, Z=self.pid_temperature_executiontime)
-        self.PID_temp_PBR2 = PID_Event_Based (P=10*6.48, I=20, D=2, Z=self.pid_temperature_executiontime)
-        self.PID_temp_PBR3 = PID_Event_Based (P=10*6.48, I=20, D=2, Z=self.pid_temperature_executiontime)  
+        #self.PID_temp_PBR1 = PID_Event_Based (P=10*6.48, I=20, D=2, Z=self.pid_temperature_executiontime)
+        self.PID_temp_PBR1 = PID_Event_Based (P=10*6.48, I=40, D=2, Z=self.pid_temperature_executiontime)
+        self.PID_temp_PBR2 = PID_Event_Based (P=10*6.48, I=1*20, D=2, Z=self.pid_temperature_executiontime)
+        self.PID_temp_PBR3 = PID_Event_Based (P=10*6.48, I=1*20, D=2, Z=self.pid_temperature_executiontime)  
         
         # # Instances ofs PIDs for Ligth
         self.PID_Light_PBR1 = PID_Realtime (P=3, I=0.5, D=1)
         self.PID_Light_PBR2 = PID_Realtime (P=3, I=0.5, D=1)
-        self.PID_Light_PBR3 = PID_Realtime (P=15, I=0.5, D=1)   
+        self.ADRC_Light_PBR3 = ADRC_II()   
         
         #Start storage variables
         # Global variables 
-        MAX_SIZE = 50  # Maximum size of the list
-        self.Time_PBR1_pH=deque([datetime.datetime.now()], maxlen=MAX_SIZE)
-        self.Time_PBR1_DO=deque([datetime.datetime.now()], maxlen=MAX_SIZE)
-        self.Time_PBR2_pH=deque([datetime.datetime.now()], maxlen=MAX_SIZE)
-        self.Time_PBR2_DO=deque([datetime.datetime.now()], maxlen=MAX_SIZE)
-        self.Time_PBR3_pH=deque([datetime.datetime.now()], maxlen=MAX_SIZE)
-        self.Time_PBR3_DO=deque([datetime.datetime.now()], maxlen=MAX_SIZE)
+        _MAX_size_ = 50  # Maximum size of the list
+        self.Time_PBR1_pH=deque([datetime.datetime.now()], maxlen=_MAX_size_)
+        self.Time_PBR1_DO=deque([datetime.datetime.now()], maxlen=_MAX_size_)
+        self.Time_PBR2_pH=deque([datetime.datetime.now()], maxlen=_MAX_size_)
+        self.Time_PBR2_DO=deque([datetime.datetime.now()], maxlen=_MAX_size_)
+        self.Time_PBR3_pH=deque([datetime.datetime.now()], maxlen=_MAX_size_)
+        self.Time_PBR3_DO=deque([datetime.datetime.now()], maxlen=_MAX_size_)
         
                        
-        self.pH_PBR1=deque([0], maxlen=MAX_SIZE)
-        self.pH_PBR2=deque([0], maxlen=MAX_SIZE)
-        self.pH_PBR3=deque([0], maxlen=MAX_SIZE)
+        self.pH_PBR1=deque([0], maxlen=_MAX_size_)
+        self.pH_PBR2=deque([0], maxlen=_MAX_size_)
+        self.pH_PBR3=deque([0], maxlen=_MAX_size_)
         
-        self.DO_PBR1=deque([0], maxlen=MAX_SIZE)
-        self.DO_PBR2=deque([0], maxlen=MAX_SIZE)
-        self.DO_PBR3=deque([0], maxlen=MAX_SIZE)
+        self.DO_PBR1=deque([0], maxlen=_MAX_size_)
+        self.DO_PBR2=deque([0], maxlen=_MAX_size_)
+        self.DO_PBR3=deque([0], maxlen=_MAX_size_)
         
         self.lvl_PBR1=[]
         self.lvl_PBR2=[]
@@ -416,6 +426,13 @@ class Main():
         self.filter_cutoff = 0.05  # Adjust this as needed
         self.filter_b, self.filter_a = butter(self.filter_order, self.filter_cutoff, 'lowpass')
         
+        
+        # FIlter for light
+
+        
+        
+        
+        
         #  Set the velocity e PMP
         self.level_Peristaltic_PBR1=False
         self.level_Peristaltic_PBR2=False
@@ -460,15 +477,15 @@ class Main():
         # Global self.setpoint
         # Call the ADRC controller instances for PBR1, PBR2, and PBR3
         
-        D_PBR1 = self.ADRC_PBR1.ComputeADRC(setpoint=self.setpoint, y=self.y_PBR1, K=15, dt=dt)
-        D_PBR2 = self.ADRC_PBR2.ComputeADRC(setpoint=self.setpoint, y=self.y_PBR2, K=15, dt=dt)
-        D_PBR3 = self.ADRC_PBR3.ComputeADRC(setpoint=self.setpoint, y=self.y_PBR3, K=15, dt=dt)
+        Dilution_PBR1 = self.ADRC_PBR1.ComputeADRC(setpoint=self.setpoint, y=self.y_PBR1, K=15, dt=dt)
+        Dilution_PBR2 = self.ADRC_PBR2.ComputeADRC(setpoint=self.setpoint, y=self.y_PBR2, K=15, dt=dt)
+        Dilution_PBR3 = self.ADRC_PBR3.ComputeADRC(setpoint=self.setpoint, y=self.y_PBR3, K=15, dt=dt)
 
         
         # Update the Microalgae Models for PBR1, PBR2, and PBR3 with control_output
-        self.y_PBR1, newQ_Pbr1, newS_Pbr1 = self.MicroalgaePBR1.update_tertiolecta(D_PBR1, dt=dt)
-        self.y_PBR2, newQ_Pbr2, newS_Pbr2 = self.MicroalgaePBR2.update_tertiolecta(D_PBR2, dt=dt)
-        self.y_PBR3, newQ_Pbr3, newS_Pbr3 = self.MicroalgaePBR3.update_tertiolecta(D_PBR3, dt=dt)
+        self.y_PBR1, newQ_Pbr1, newS_Pbr1 = self.MicroalgaePBR1.update_tertiolecta(Dilution_PBR1, dt=dt)
+        self.y_PBR2, newQ_Pbr2, newS_Pbr2 = self.MicroalgaePBR2.update_tertiolecta(Dilution_PBR2, dt=dt)
+        self.y_PBR3, newQ_Pbr3, newS_Pbr3 = self.MicroalgaePBR3.update_tertiolecta(Dilution_PBR3, dt=dt)
         
         #print(self.y_PBR1)
         #print(self.y_PBR2)
@@ -491,16 +508,17 @@ class Main():
         # create ADRC isntances
         
         print('Starting or Resuming Threads')
-        N = 100 # Number of elements to be stored
+        N_samples = 100 # Number of elements to be stored
         
         # Threads FBR
         dt_ADRC = 0.01
         self.ADRC = continuous_threading.PeriodicThread(dt_ADRC, target=self.ThreadADRC, args=[dt_ADRC])
         self.th = continuous_threading.ContinuousThread(target=self.MyThread, args=[0] ) #Defining the thread as continuos thread in a loop
         self.th2 = continuous_threading.ContinuousThread(target=self.I2C_monitoring) #Defining the thread as continuos thread in a loop
-        self.th3 = continuous_threading.PeriodicThread(self.Nivel_executiontime, target=self.nivel_monitoring, args=[N]) #Defining the thread as periodic thread in a loop
-        self.th4 = continuous_threading.ContinuousThread(target=self.Light_control, args=[N] ) #Defining the thread as periodic thread in a loop
-        self.th5 = continuous_threading.PeriodicThread(self.pid_temperature_executiontime, target=self.temperature_control, args=[N]) #Defining the thread as periodic thread in a loop
+        self.th3 = continuous_threading.PeriodicThread(self.Nivel_executiontime, target=self.nivel_monitoring, args=[N_samples]) #Defining the thread as periodic thread in a loop
+        self.th4 = continuous_threading.PeriodicThread(self.Light_executiontime, target=self.Light_control, args=[N_samples] ) #Defining the thread as periodic thread in a loop
+        self.th5 = continuous_threading.PeriodicThread(self.pid_temperature_executiontime, target=self.temperature_control, args=[N_samples]) #Defining the thread as periodic thread in a loop
+        
         
         # self.th.daemon = True # Set thread to daemon
         #print(self.th.is_running)
@@ -604,7 +622,15 @@ class Main():
         workbook.save('I2C_'+ self.Hours +"_"+ self.today +'.xlsx')
         
     def apply_butterworth_filter(self, data):
-       return lfilter(self.filter_b, self.filter_a, data)   
+       return lfilter(self.filter_b, self.filter_a, data) 
+    
+    def moving_average_filter(self, data, window_size):
+        cumsum = np.cumsum(np.insert(data, 0, 0))
+        moving_avg = (cumsum[window_size:] - cumsum[:-window_size]) / window_size
+        return moving_avg
+    
+  
+
        
     def nivel_monitoring(self, N):
         # Nivel PBR1
@@ -685,25 +711,29 @@ class Main():
         else: 
             self.level_Peristaltic_PBR3=False
         
-        
-       
 
-      
-
-        
         # Update excel File
         Time = datetime.datetime.now()
         Time = time.strftime("%H.%M.%S")
         self.start_row_nivel_monitoring += 1
         self.update_excel_file_nivel(sheet=self.start_row_nivel_monitoring,Time=Time, Nivel_PBR1=nivel_real_PBR1, Nivel_PBR2=nivel_real_PBR2, Nivel_PBR3=nivel_real_PBR3 )
         
+
+    def PID_tmp_PBR1reset(self):
+        self.PID_temp_PBR1.reset()
+
+    def PID_tmp_PBR2reset(self):
+        self.PID_temp_PBR2.reset()
+
+    def PID_tmp_PBR3reset(self):
+        self.PID_temp_PBR3.reset()
         
-    
     def temperature_control(self, N):
         #z is the time of execution of the thread
         Min_PID = -100  # Minimal PID value acording tuning parameters
 
-        #print("z = ", z)
+        # Reset the controllers if the setpoint change in menus
+
         
         # append time temperature 
         self.TimeTemperature.append(datetime.datetime.now())
@@ -735,16 +765,7 @@ class Main():
         UPID_Temp_PBR1 = self.PID_temp_PBR1.update(average_last_third_PBR1)
         
      
-        
-        print("PBR1 the error is", self.PID_temp_PBR1.getError())
-        print("PBR1 the control values is", UPID_Temp_PBR1)     
-        print("PBR1 the integration", self.PID_temp_PBR1.getIntegrator())
-        print("PBR1 the derivator is", self.PID_temp_PBR1.getDerivator())
-        print("PBR1 the proportional is", self.PID_temp_PBR1.getPropotional())
-        
-
-
-    
+  
     
     
         # Write the temperature computed value in the labjack
@@ -828,6 +849,7 @@ class Main():
          # Append time vector
         self.TimeIin.append(datetime.datetime.now())
         self.TimeIin=self.TimeIin[-N:]
+        window_size = 3
         
         # PBR1
         self.Intensity_PBR1 = ((Labjack1.readValue('AIN5')-0.39)*10000)*8.85 - 990  #Read analoge input
@@ -837,6 +859,7 @@ class Main():
         self.Iin_PBR1.append(self.Intensity_PBR1)
         # Limits vector to have 20 elements
         self.Iin_PBR1=self.Iin_PBR1[-N:] 
+        
         filtered_Iin_PBR1 = self.apply_butterworth_filter(self.Iin_PBR1)
         self.wFBR1.xIin.plot(self.TimeIin, filtered_Iin_PBR1)
         self.wFBR1.xIin.set_ylim([0, 600])
@@ -845,7 +868,7 @@ class Main():
         
         last_third_PBR1 = filtered_Iin_PBR1[-(N//3):]
         average_last_third_PBR1 = sum(last_third_PBR1) / len(last_third_PBR1)
-        print("Medido luz PBR1", average_last_third_PBR1)
+        #print("Medido luz PBR1", average_last_third_PBR1)
         
         
         # Light Control PBR1
@@ -884,32 +907,41 @@ class Main():
         
         # PBR3
         self.Intensity_PBR3 = ((Labjack1.readValue('AIN9')-0.39)*10000)*8.85 - 990 #Read analoge input
-        print("Intensity PBR3", self.Intensity_PBR3)
+        #print("Intensity PBR3", self.Intensity_PBR3)
         self.wFBR3.xIin.clear()
-        self.wFBR3.xIin.grid(True),self.wFBR1.xIin.set_xlabel('$Time$'),self.wFBR1.xIin.set_ylabel('$\mu mol \cdot m^{-2} \cdot s^{-1}$')
+        self.wFBR3.xIin.grid(True),self.wFBR3.xIin.set_xlabel('$Time$'),self.wFBR3.xIin.set_ylabel('$\mu mol \cdot m^{-2} \cdot s^{-1}$')
         # Append Light vector
         self.Iin_PBR3.append(self.Intensity_PBR3)
         # Limits vector to have 20 elements
         self.Iin_PBR3=self.Iin_PBR3[-N:] 
-        filtered_Iin_PBR3 = self.apply_butterworth_filter(self.Iin_PBR3)
+        filtered_Iin_PBR3 = self.apply_butterworth_filter(self.Iin_PBR3)       
+    
+        
+        
+        
         self.wFBR3.xIin.plot(self.TimeIin, filtered_Iin_PBR3)
         self.wFBR3.xIin.set_ylim([0, 600])
         self.wFBR3.lineIin.draw()
         
         # Light Control PBR3
         # Setpoint
-        self.PID_Light_PBR3.setPoint(self.wFBR3.Ref_luz.get())
-               
-        last_third_PBR3 = filtered_Iin_PBR3[-(N//3):]
-        average_last_third_PBR3 = sum(last_third_PBR3) / len(last_third_PBR3)
-        print("Medido luz PBR3", average_last_third_PBR3)
+        
+
+        Moving_Filter_PBR3 = self.moving_average_filter(self.Iin_PBR3, window_size=window_size)
+                
+        last_three_PBR3 = Moving_Filter_PBR3[-3:]
+        average_last_three_PBR3 = sum(last_three_PBR3) / len(last_three_PBR3) if len(last_three_PBR3) > 0 else 0
+        
+        
+        print("Medido luz PBR3", average_last_three_PBR3)
         
         # Call update function of the PID 
-        UPID_light_PBR3 = self.PID_Light_PBR3.update(average_last_third_PBR3)
+        UADRC_light_PBR3 = self.ADRC_Light_PBR3.ComputeADRC(setpoint=self.wFBR3.Ref_luz.get(), y=self.Intensity_PBR3, Kp=0.05, Kd=0.02, dt=self.Light_executiontime )
+        
         #print("PBR3 the setpoint is", self.PID_Light_PBR3.getPoint())
         #print("PBR3 the control values is", UPID_light_PBR3)     
         # Write the temperature computed value in the labjack
-        Labjack1.sendValue('TDAC5', np.interp(UPID_light_PBR3, [0, 100], [0, 5])) # Interp
+        Labjack1.sendValue('TDAC5', np.interp(UADRC_light_PBR3, [0, 100], [0, 5])) # Interp
         
         # Update excel File
         Time = datetime.datetime.now()
