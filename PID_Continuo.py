@@ -18,8 +18,8 @@ class PID_Realtime:
         # PID parameters
         
         self.K=P
-        self.Ti=I
-        self.Td=D
+        self.Ti=1/I
+        self.Td=1/D
         self.differetial_on_measurement=differetial_on_measurement
 
 

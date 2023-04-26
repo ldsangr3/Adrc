@@ -23,6 +23,7 @@ import datetime
 
 from PID import PID_Event_Based
 from PID_Continuo import PID_Realtime
+from PID_Discreto import PID_Discreto
 from ADRC import ADRC
 from ADRC_II import ADRC_II
 from Models import Model_Microalgae
@@ -197,6 +198,8 @@ class threads:
     pass
 
 class Main():
+
+# Main funtions
     
     def __init__(self):
         self.root = tk.Tk()
@@ -236,8 +239,8 @@ class Main():
         menu_edicion.add_command(label="Reset PID PBR3", command=self.PID_tmp_PBR3reset)
         
         
-        menu_ayuda.add_command(label="Thanks",command=self.f_acerca) # f.acerca = MÉTODO CON LA FIGURA AGRADECIMIENTO
-        menu_ayuda.add_command(label="About",command=self.f_about)   # f.about  = About method
+        menu_ayuda.add_command(label="Thanks", command=self.f_acerca) # f.acerca = MÉTODO CON LA FIGURA AGRADECIMIENTO
+        menu_ayuda.add_command(label="About", command=self.f_about)   # f.about  = About method
         
         #
         self.notebook=ttk.Notebook(self.root) #CREAR OBJETO PARA GESTIONAR LAS PESTAÑAS
@@ -273,20 +276,34 @@ class Main():
         self.wFBR3 = Window_FBR(self.tab_FBR3)
         
         # Threads Execution times
-        self.pid_temperature_executiontime=0.01 # Time of execution fo the temperature thread
-        self.Nivel_executiontime=0.1 # Time of execution fo the Nivel thread
-        self.Light_executiontime=2 # Time of execution fo the temperature thread
+        self.pid_temperature_executiontime=2 #Time of execution fo the temperature thread
+        self.Nivel_executiontime=0.1 #Time of execution fo the Nivel thread
+        self.Light_executiontime=1 #Time of execution fo the temperature thread
+        self.Light_Control_executiontime=120 #Time of execution fo the temperature thread
         
         # Instances ofs PIDs for temperature
         #self.PID_temp_PBR1 = PID_Event_Based (P=10*6.48, I=20, D=2, Z=self.pid_temperature_executiontime)
-        self.PID_temp_PBR1 = PID_Event_Based (P=10*6.48, I=40, D=2, Z=self.pid_temperature_executiontime)
-        self.PID_temp_PBR2 = PID_Event_Based (P=10*6.48, I=1*20, D=2, Z=self.pid_temperature_executiontime)
-        self.PID_temp_PBR3 = PID_Event_Based (P=10*6.48, I=1*20, D=2, Z=self.pid_temperature_executiontime)  
+        self.PID_temp_PBR1 = PID_Event_Based (P=0.0719593634132244, I=0.0205325079870776, D=-0.584407891678162, Z=self.pid_temperature_executiontime)
+        self.PID_temp_PBR2 = PID_Event_Based (P=0.0719593634132244, I=0.0205325079870776, D=-0.584407891678162, Z=self.pid_temperature_executiontime)
+        self.PID_temp_PBR3 = PID_Event_Based (P=0.0719593634132244, I=0.0205325079870776, D=-0.584407891678162, Z=self.pid_temperature_executiontime)  
         
         # # Instances ofs PIDs for Ligth
-        self.PID_Light_PBR1 = PID_Realtime (P=3, I=0.5, D=1)
-        self.PID_Light_PBR2 = PID_Realtime (P=3, I=0.5, D=1)
-        self.ADRC_Light_PBR3 = ADRC_II()   
+        self.PID_Light_PBR1 = PID_Discreto ()
+        self.PID_Light_PBR2 = PID_Discreto ()
+        self.PID_Light_PBR3 = PID_Discreto ()
+        
+        
+        # Start the Initial values of the Light
+        
+        Labjack1.sendValue('TDAC3', 3.5)
+        Labjack1.sendValue('TDAC4', 3.5)
+        Labjack1.sendValue('TDAC5', 3.5)
+        
+        # Start 
+        self.avfiltered_Iin_PBR1= [1] * 10
+        self.avfiltered_Iin_PBR2= [1] * 10
+        self.avfiltered_Iin_PBR3= [1] * 10
+        
         
         #Start storage variables
         # Global variables 
@@ -318,10 +335,14 @@ class Main():
         self.Iin_PBR1=[]
         self.Iin_PBR2=[]
         self.Iin_PBR3=[]
-        self.TimeIin=[]
         
+        self.TimeIin=[]
+        self.average_Iin_PBR1=[]
+        self.average_Iin_PBR2=[]
+        self.average_Iin_PBR3=[]
         
         self.TimeTemperature=[]
+        
         self.Tmp_PBR1=[]
         self.Tmp_PBR2=[]
         self.Tmp_PBR3=[]
@@ -334,9 +355,9 @@ class Main():
         self.ADRC_PBR3 = ADRC()
         
         print('Creating Microalgae Models')
-        self.MicroalgaePBR1 = Model_Microalgae(D=0,X=0.2,Q=8,S=100)
-        self.MicroalgaePBR2 = Model_Microalgae(D=0,X=0.2,Q=8,S=100)
-        self.MicroalgaePBR3 = Model_Microalgae(D=0,X=0.2,Q=8,S=100)
+        self.MicroalgaePBR1 = Model_Microalgae(D=0, X=0.2, Q=8, S=100)
+        self.MicroalgaePBR2 = Model_Microalgae(D=0, X=0.2, Q=8, S=100)
+        self.MicroalgaePBR3 = Model_Microalgae(D=0, X=0.2, Q=8, S=100)
             
                 
         # Create  Excel Boot to save data
@@ -429,10 +450,6 @@ class Main():
         
         # FIlter for light
 
-        
-        
-        
-        
         #  Set the velocity e PMP
         self.level_Peristaltic_PBR1=False
         self.level_Peristaltic_PBR2=False
@@ -455,7 +472,6 @@ class Main():
         
         print('Ready to start')
         
-
     def submit_setpoint(self):
         self.setpoint = self.entry_setpoint.get()
         try:
@@ -467,10 +483,54 @@ class Main():
             self.label_display_setpoint.config(text="Invalid setpoint value. Please enter a number.")
     
     def MyThread(self, a):
-        # start threads
-        #############
-        # This is executing but doing nothinbg
-        time.sleep(1)
+        # Obtén la hora actual
+        current_time = datetime.datetime.now()
+
+        # Define las horas a las que se ejecutan las tareas
+        task1_hour = 18  # Ejecuta la tarea 1 a las 8:00
+        task2_hour = 8  # Ejecuta la tarea 2 a las 0:00 (medianoche)
+
+        # Calcula la hora actual y redondea hacia abajo al múltiplo de 16 más cercano
+        current_hour = current_time.hour
+        
+
+        # Verifica si es hora de ejecutar la tarea 1
+        if current_hour >= task1_hour:
+            print("Encentiendo Luces")
+            #PBR1
+            Labjack1.sendValue('EIO0', True)  
+            #PBR2
+            Labjack1.sendValue('EIO4', True)  
+            #PBR3
+            Labjack1.sendValue('EIO6', True)
+            # Reset the controllers
+              
+            self.PID_Light_PBR1.reset()
+            self.PID_Light_PBR2.reset()
+            self.PID_Light_PBR3.reset()
+            
+            # Realiza las acciones necesarias para la tarea 1 aquí
+
+        # Verifica si es hora de ejecutar la tarea 2
+        elif current_hour >= task2_hour:
+            print("Apagando Luces")
+            #PBR1
+            Labjack1.sendValue('EIO0', False)  # 1
+            #PBR2
+            Labjack1.sendValue('EIO4', False)  # 2
+            #PBR3
+            Labjack1.sendValue('EIO6', False)  # 1
+            # Realiza las acciones necesarias para la tarea 2 aquí
+        
+        time.sleep(10)
+
+
+
+        
+        
+
+        
+        
     
     def ThreadADRC(self, dt):
         # print("No hago nada :O")
@@ -496,12 +556,8 @@ class Main():
         #print(D_PBR2)
         #print(D_PBR3)
         
-        
-
          
-        
-        
-        
+# General funtions
     
     def star_FBR(self): 
         print('Creating ADRC instances')
@@ -512,33 +568,30 @@ class Main():
         
         # Threads FBR
         dt_ADRC = 0.01
-        self.ADRC = continuous_threading.PeriodicThread(dt_ADRC, target=self.ThreadADRC, args=[dt_ADRC])
-        self.th = continuous_threading.ContinuousThread(target=self.MyThread, args=[0] ) #Defining the thread as continuos thread in a loop
+        self.thADRC = continuous_threading.PeriodicThread(dt_ADRC, target=self.ThreadADRC, args=[dt_ADRC])
+        self.th1 = continuous_threading.ContinuousThread(target=self.MyThread, args=[0] ) #Defining the thread as continuos thread in a loop
         self.th2 = continuous_threading.ContinuousThread(target=self.I2C_monitoring) #Defining the thread as continuos thread in a loop
         self.th3 = continuous_threading.PeriodicThread(self.Nivel_executiontime, target=self.nivel_monitoring, args=[N_samples]) #Defining the thread as periodic thread in a loop
-        self.th4 = continuous_threading.PeriodicThread(self.Light_executiontime, target=self.Light_control, args=[N_samples] ) #Defining the thread as periodic thread in a loop
+        self.th4 = continuous_threading.PeriodicThread(self.Light_executiontime, target=self.Light_monitoring, args=[N_samples]) #Defining the thread as periodic thread in a loop
         self.th5 = continuous_threading.PeriodicThread(self.pid_temperature_executiontime, target=self.temperature_control, args=[N_samples]) #Defining the thread as periodic thread in a loop
-        
+        self.th6 = continuous_threading.PeriodicThread(self.Light_Control_executiontime, target=self.Light_Control, args=[N_samples]) 
         
         # self.th.daemon = True # Set thread to daemon
         #print(self.th.is_running)
         #if self.th.is_running == False:
-        self.ADRC.start()
-        self.th.start()
+        self.thADRC.start()
+        self.th1.start()
         self.th2.start()
         self.th3.start()
         self.th4.start()
         self.th5.start()
-        
-        
-        
-        
+        self.th6.start()
             
     def stop_FBR(self):
         print('Pausing Threads')
-        self.ADRC.stop()
+        self.thADRC.stop()
         print('Pausing ADRC Thread')
-        self.th.stop()
+        self.th1.stop()
         print('Pausing My Thread')
         self.th2.stop()
         print('Pausing IC2 Network')
@@ -548,15 +601,14 @@ class Main():
         print('Pausing Light Monitoring')
         self.th5.stop()
         print('Pausing temperature control')
-  
-        
+        self.th6.stop()
+        print('Pausing Light control')
+       
     def main(self):
         # call the main function of each PBR
         self.wFBR1.__main__(self.tab_FBR1)
         self.wFBR2.__main__(self.tab_FBR2)
         self.wFBR3.__main__(self.tab_FBR3)
-        
-        
         
     def update_excel_file_Light(self, sheet, Time, Intensity_PBR1, Intensity_PBR2, Intensity_PBR3):
         
@@ -628,10 +680,29 @@ class Main():
         cumsum = np.cumsum(np.insert(data, 0, 0))
         moving_avg = (cumsum[window_size:] - cumsum[:-window_size]) / window_size
         return moving_avg
+      
+    def get_average_of_last_third(self, data, num_samples):
+        last_third = data[-(num_samples // 3):]
+        average_last_third = sum(last_third) / len(last_third)
+        return average_last_third 
     
-  
+    def get_average(self, data):
+        if len(data) == 0:
+            return 0
+        else:
+            return sum(data) / len(data)
+    
+    def PID_tmp_PBR1reset(self):
+        self.PID_temp_PBR1.reset()
 
-       
+    def PID_tmp_PBR2reset(self):
+        self.PID_temp_PBR2.reset()
+
+    def PID_tmp_PBR3reset(self):
+        self.PID_temp_PBR3.reset()
+   
+# Control funtions
+
     def nivel_monitoring(self, N):
         # Nivel PBR1
         voltaje_Nivel_PBR1 = float(Labjack2.readValue('AIN0'))
@@ -717,20 +788,10 @@ class Main():
         Time = time.strftime("%H.%M.%S")
         self.start_row_nivel_monitoring += 1
         self.update_excel_file_nivel(sheet=self.start_row_nivel_monitoring,Time=Time, Nivel_PBR1=nivel_real_PBR1, Nivel_PBR2=nivel_real_PBR2, Nivel_PBR3=nivel_real_PBR3 )
-        
 
-    def PID_tmp_PBR1reset(self):
-        self.PID_temp_PBR1.reset()
-
-    def PID_tmp_PBR2reset(self):
-        self.PID_temp_PBR2.reset()
-
-    def PID_tmp_PBR3reset(self):
-        self.PID_temp_PBR3.reset()
-        
     def temperature_control(self, N):
         #z is the time of execution of the thread
-        Min_PID = -100  # Minimal PID value acording tuning parameters
+        
 
         # Reset the controllers if the setpoint change in menus
 
@@ -760,14 +821,9 @@ class Main():
         # Call update function of the PID and send the value of the actual temperature
         # Control_Nivel on/off simply
         # First computed the average of the last elements of the vectors
-        last_third_PBR1 = filtered_temp_PBR1[-(N//3):]
-        average_last_third_PBR1 = sum(last_third_PBR1) / len(last_third_PBR1)
+        average_last_third_PBR1 = self.get_average_of_last_third(filtered_temp_PBR1, N)
         UPID_Temp_PBR1 = self.PID_temp_PBR1.update(average_last_third_PBR1)
         
-     
-  
-    
-    
         # Write the temperature computed value in the labjack
         Labjack1.sendValue('DAC0', np.interp(UPID_Temp_PBR1, [0, 100], [0, 5])) # Interp
         
@@ -795,12 +851,11 @@ class Main():
         self.PID_temp_PBR2.setPoint(self.wFBR2.Ref_tmp.get())
         # Call update function of the PID and send the value of the actual temperature
         
-        last_third_PBR2 = filtered_temp_PBR2[-(N//3):]
-        average_last_third_PBR2 = sum(last_third_PBR2) / len(last_third_PBR2)
+        average_last_third_PBR2 = self.get_average_of_last_third(filtered_temp_PBR2, N)
         UPID_Temp_PBR2 = self.PID_temp_PBR2.update(average_last_third_PBR2)
            
         # Write the temperature computed value in the labjack
-        Labjack1.sendValue('DAC1', np.interp(UPID_Temp_PBR2, [0, 100], [0, 5])) # Interp
+        #Labjack1.sendValue('DAC1', np.interp(UPID_Temp_PBR2, [0, 100], [0, 5])) # Interp
         
         # Turn on Cooler
         if Temp_PBR2 > self.wFBR2.Ref_tmp.get(): 
@@ -824,12 +879,11 @@ class Main():
         # Setpoint
         self.PID_temp_PBR3.setPoint(self.wFBR3.Ref_tmp.get())
         # Call update function of the PID and send the value of the actual temperature
-        last_third_PBR3 = filtered_temp_PBR3[-(N//3):]
-        average_last_third_PBR3 = sum(last_third_PBR3) / len(last_third_PBR3)
+        average_last_third_PBR3 = self.get_average_of_last_third(filtered_temp_PBR3, N)
         #print("Medido PBR3", average_last_third_PBR3)
         UPID_Temp_PBR3 = self.PID_temp_PBR3.update(average_last_third_PBR3)
 
-        Labjack1.sendValue('TDAC2', np.interp(UPID_Temp_PBR3, [0, 100], [0, 5])) # Interp
+        #Labjack1.sendValue('TDAC2', np.interp(UPID_Temp_PBR3, [0, 100], [0, 5])) # Interp
         
         # Turn on Cooler
         if Temp_PBR3 > self.wFBR3.Ref_tmp.get(): #VENTILADOR ACTIVACIÓN DIGITAL
@@ -843,105 +897,108 @@ class Main():
         Time = time.strftime("%H.%M.%S")
         self.start_row_Temperature_Control += 1
         self.update_excel_file_temperature(sheet=self.start_row_Temperature_Control,Time=Time, Temperature_PBR1=Temp_PBR1, Temperature_PBR2=Temp_PBR2, Temperature_PBR3=Temp_PBR3)
-        
     
-    def Light_control(self, N):
-         # Append time vector
-        self.TimeIin.append(datetime.datetime.now())
-        self.TimeIin=self.TimeIin[-N:]
-        window_size = 3
+    def Light_Control(self, N):
         
-        # PBR1
-        self.Intensity_PBR1 = ((Labjack1.readValue('AIN5')-0.39)*10000)*8.85 - 990  #Read analoge input
-        self.wFBR1.xIin.clear()
-        self.wFBR1.xIin.grid(True),self.wFBR1.xIin.set_xlabel('$Time$'),self.wFBR1.xIin.set_ylabel('$\mu mol \cdot m^{-2} \cdot s^{-1}$')
-        # Append Light vector
-        self.Iin_PBR1.append(self.Intensity_PBR1)
-        # Limits vector to have 20 elements
-        self.Iin_PBR1=self.Iin_PBR1[-N:] 
-        
-        filtered_Iin_PBR1 = self.apply_butterworth_filter(self.Iin_PBR1)
-        self.wFBR1.xIin.plot(self.TimeIin, filtered_Iin_PBR1)
-        self.wFBR1.xIin.set_ylim([0, 600])
-        self.wFBR1.lineIin.draw()
+        average_last_third_PBR1 = self.get_average(self.avfiltered_Iin_PBR1)
+        average_last_third_PBR2 = self.get_average(self.avfiltered_Iin_PBR2)
+        average_last_third_PBR3 = self.get_average(self.avfiltered_Iin_PBR3)
         
         
-        last_third_PBR1 = filtered_Iin_PBR1[-(N//3):]
-        average_last_third_PBR1 = sum(last_third_PBR1) / len(last_third_PBR1)
-        #print("Medido luz PBR1", average_last_third_PBR1)
         
         
         # Light Control PBR1
         # Setpoint
         self.PID_Light_PBR1.setPoint(self.wFBR1.Ref_luz.get())
         # Call update function of the PID 
-        UPID_light_PBR1 = self.PID_Light_PBR1.update(average_last_third_PBR1)
-        #print("PBR1 the setpoint is", self.PID_temp_PBR1.getPoint())
-        #print("PBR1 the control values is", UPID_light_PBR1)     
-        # Write the temperature computed value in the labjack
-        Labjack1.sendValue('TDAC3', np.interp(UPID_light_PBR1, [0, 100], [0, 5])) # Interp
-
+        PID_Light_PBR1 = self.PID_Light_PBR1.update(average_last_third_PBR1)
+        Labjack1.sendValue('TDAC3', np.interp(PID_Light_PBR1, [0, 1000], [3, 5])) # Interp
         
+        # Light Control PBR2
+        # Setpoint
+        self.PID_Light_PBR2.setPoint(self.wFBR2.Ref_luz.get())
+        # Call update function of the PID 
+        PID_Light_PBR2 = self.PID_Light_PBR2.update(average_last_third_PBR2)
+        Labjack1.sendValue('TDAC4', np.interp(PID_Light_PBR2, [0, 1000], [3, 5])) # Interp
+        
+        # Light Control PBR3
+        # Setpoint
+        self.PID_Light_PBR3.setPoint(self.wFBR3.Ref_luz.get())
+        PID_Light_PBR3 = self.PID_Light_PBR3.update(current_value=average_last_third_PBR3)
+        Labjack1.sendValue('TDAC5', np.interp(PID_Light_PBR3, [0, 1000], [3, 5])) # Interp
+        
+        
+    
+    def Light_monitoring(self, N):
+        
+        # Append time vector
+        self.TimeIin.append(datetime.datetime.now())
+        self.TimeIin=self.TimeIin[-N:]
+        
+        
+        # For more information about this equation refer to manual of the Sensor S2-141, taking into account that  you have to multiply your readings by 1.25 to account for the immersion effect due to the light refracting when it hits the water
+        
+        # PBR1
+        self.Intensity_PBR1 = ((Labjack1.readValue('AIN5')-0.399)*100000)*1.25  #Read analoge input
+        self.wFBR1.xIin.clear()
+        self.wFBR1.xIin.grid(True),self.wFBR1.xIin.set_xlabel('$Time$'),self.wFBR1.xIin.set_ylabel('$\mu mol \cdot m^{-2} \cdot s^{-1}$')
+        # Append Light vector
+        self.Iin_PBR1.append(self.Intensity_PBR1)
+        # Limits vector to have 20 elements
+        self.Iin_PBR1=self.Iin_PBR1[-N:] 
+        self.filtered_Iin_PBR1 = self.apply_butterworth_filter(self.Iin_PBR1)
+
         # PBR2
-        self.Intensity_PBR2 = ((Labjack1.readValue('AIN13')-0.39)*10000 -112)*8.85 - 990  #Read analoge input
+        self.Intensity_PBR2 = ((Labjack1.readValue('AIN13')-0.399)*100000)*1.25  #Read analoge input
         self.wFBR2.xIin.clear()
         self.wFBR2.xIin.grid(True),self.wFBR2.xIin.set_xlabel('$Time$'),self.wFBR2.xIin.set_ylabel('$\mu mol \cdot m^{-2} \cdot s^{-1}$')
         # Append Light vector
         self.Iin_PBR2.append(self.Intensity_PBR2)
         # Limits vector to have 20 elements
         self.Iin_PBR2=self.Iin_PBR2[-N:] 
-        self.wFBR2.xIin.plot(self.TimeIin,self.Iin_PBR2)
-        self.wFBR2.xIin.set_ylim([0, 600])
-        self.wFBR2.lineIin.draw()
+        self.filtered_Iin_PBR2 = self.apply_butterworth_filter(self.Iin_PBR2)
         
-        # Light Control PBR2
-        # Setpoint
-        self.PID_Light_PBR2.setPoint(self.wFBR2.Ref_luz.get())
-        # Call update function of the PID 
-        UPID_light_PBR2 = self.PID_Light_PBR2.update(self.Intensity_PBR2)
-        #print("PBR2 the setpoint is", self.PID_Light_PBR2.getPoint())
-        #print("PBR2 the control values is", UPID_light_PBR2)     
-        # Write the temperature computed value in the labjack
-        Labjack1.sendValue('TDAC4', np.interp(UPID_light_PBR2, [0, 100], [0, 5])) # Interp
         
         
         # PBR3
-        self.Intensity_PBR3 = ((Labjack1.readValue('AIN9')-0.39)*10000)*8.85 - 990 #Read analoge input
-        #print("Intensity PBR3", self.Intensity_PBR3)
+        self.Intensity_PBR3 = ((Labjack1.readValue('AIN9')-0.399)*100000)*1.25 #Read analoge input
         self.wFBR3.xIin.clear()
         self.wFBR3.xIin.grid(True),self.wFBR3.xIin.set_xlabel('$Time$'),self.wFBR3.xIin.set_ylabel('$\mu mol \cdot m^{-2} \cdot s^{-1}$')
         # Append Light vector
         self.Iin_PBR3.append(self.Intensity_PBR3)
         # Limits vector to have 20 elements
         self.Iin_PBR3=self.Iin_PBR3[-N:] 
-        filtered_Iin_PBR3 = self.apply_butterworth_filter(self.Iin_PBR3)       
-    
+        self.filtered_Iin_PBR3 = self.apply_butterworth_filter(self.Iin_PBR3)       
         
+ 
         
+        # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+        self.avfiltered_Iin_PBR1 =self.moving_average_filter(self.Iin_PBR1, 3)
+        self.avfiltered_Iin_PBR2 =self.moving_average_filter(self.Iin_PBR2, 3)
+        self.avfiltered_Iin_PBR3 =self.moving_average_filter(self.Iin_PBR3, 3)
         
-        self.wFBR3.xIin.plot(self.TimeIin, filtered_Iin_PBR3)
+        self.average_Iin_PBR1.append(self.get_average(self.avfiltered_Iin_PBR1)) 
+        self.average_Iin_PBR2.append(self.get_average(self.avfiltered_Iin_PBR2)) 
+        self.average_Iin_PBR3.append(self.get_average(self.avfiltered_Iin_PBR3)) 
+        
+        self.average_Iin_PBR1 = self.average_Iin_PBR1[-N:]
+        self.average_Iin_PBR2 = self.average_Iin_PBR2[-N:]
+        self.average_Iin_PBR3 = self.average_Iin_PBR3[-N:]
+        
+        #####################################################################
+        
+        #### plot graphs
+        self.wFBR1.xIin.plot(self.TimeIin, self.average_Iin_PBR1)
+        self.wFBR1.xIin.set_ylim([0, 600])
+        self.wFBR1.lineIin.draw()
+        
+        self.wFBR2.xIin.plot(self.TimeIin, self.average_Iin_PBR2)
+        self.wFBR2.xIin.set_ylim([0, 600])
+        self.wFBR2.lineIin.draw()
+        
         self.wFBR3.xIin.set_ylim([0, 600])
+        self.wFBR3.xIin.plot(self.TimeIin, self.average_Iin_PBR3)
         self.wFBR3.lineIin.draw()
-        
-        # Light Control PBR3
-        # Setpoint
-        
-
-        Moving_Filter_PBR3 = self.moving_average_filter(self.Iin_PBR3, window_size=window_size)
-                
-        last_three_PBR3 = Moving_Filter_PBR3[-3:]
-        average_last_three_PBR3 = sum(last_three_PBR3) / len(last_three_PBR3) if len(last_three_PBR3) > 0 else 0
-        
-        
-        print("Medido luz PBR3", average_last_three_PBR3)
-        
-        # Call update function of the PID 
-        UADRC_light_PBR3 = self.ADRC_Light_PBR3.ComputeADRC(setpoint=self.wFBR3.Ref_luz.get(), y=self.Intensity_PBR3, Kp=0.05, Kd=0.02, dt=self.Light_executiontime )
-        
-        #print("PBR3 the setpoint is", self.PID_Light_PBR3.getPoint())
-        #print("PBR3 the control values is", UPID_light_PBR3)     
-        # Write the temperature computed value in the labjack
-        Labjack1.sendValue('TDAC5', np.interp(UADRC_light_PBR3, [0, 100], [0, 5])) # Interp
         
         # Update excel File
         Time = datetime.datetime.now()
@@ -949,8 +1006,7 @@ class Main():
         self.start_row_Ligt_Control += 1
         self.update_excel_file_Light(sheet=self.start_row_Ligt_Control,Time=Time, Intensity_PBR1=self.Intensity_PBR1, Intensity_PBR2=self.Intensity_PBR2, Intensity_PBR3=self.Intensity_PBR3)
         
-    
-            
+        
     
     def I2C_monitoring(self):
    
@@ -1246,11 +1302,9 @@ class Main():
         #Labjack1.sendValueI2C([ord(character) for character in comando_PBR], num_bytes_to_read=1, delay=Response_time_Ezo)
         #max = Labjack1.readMaxI2CEZO()
         #print("Max EZO3",max)
-        
-        
-        
-        
-    
+   
+# Menus information
+       
     def f_acerca(self):
         acerca = tk.Toplevel()
         acerca.geometry("700x720")
@@ -1265,7 +1319,7 @@ class Main():
         boton1 = tk.Button(marco1, text="Exit",command=acerca.destroy)
         boton1.pack(side="bottom", padx=10, pady=0)
         boton1.focus_set()
-    # Información Adicional        
+        
     def f_about(self):
         about = tk.Toplevel()
         about.geometry("900x720")
@@ -1280,12 +1334,10 @@ class Main():
         boton1.pack(side="bottom", padx=10, pady=0)
         boton1.focus_set()      
   
-  
     def run(self):
         self.root.mainloop()
-        
             
-    # close the application
+# close the application
     def close(self):
         self.root.destroy()
         # Puertos de colores de las luces Rojo, Verde Azul
@@ -1301,20 +1353,21 @@ class Main():
         Labjack1.sendValue('EIO3', False)
         Labjack1.sendValue('EIO4', False)
         Labjack1.sendValue('EIO5', False)
-        Labjack1.sendValue('TDAC4',0)
-        Labjack1.sendValue('DAC1',0)
-        Labjack1.sendValue('CIO2',0)
-        Labjack2.sendValue('TDAC0',0)
-        Labjack2.sendValue('TDAC1',0)
+        Labjack1.sendValue('TDAC4', 0)
+        Labjack1.sendValue('DAC1', 0)
+        Labjack1.sendValue('CIO2', 0)
+        Labjack2.sendValue('TDAC0', 0)
+        Labjack2.sendValue('TDAC1', 0)
         # Puertos de colores de las luces Rojo, Verde Azul
         Labjack1.sendValue('EIO6', False)
         Labjack1.sendValue('EIO7', False)
         Labjack1.sendValue('CIO0', False)
-        Labjack1.sendValue('TDAC5',0)
-        Labjack1.sendValue('TDAC2',0)
-        Labjack1.sendValue('CIO3',0)
-        Labjack2.sendValue('TDAC2',0)
-        Labjack2.sendValue('TDAC3',0)
+        Labjack1.sendValue('TDAC5', 0)
+        Labjack1.sendValue('TDAC2', 0)
+        Labjack1.sendValue('CIO3', 0)
+        Labjack2.sendValue('TDAC2', 0)
+        Labjack2.sendValue('TDAC3', 0)
+        print("Ending program")
         Labjack1.close()
         Labjack2.close()
 

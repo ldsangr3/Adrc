@@ -3,11 +3,11 @@
 ######	Viyils v 1.0	#########
 
 
-class PID_Event_Based:
+class PID_Discreto:
     """
     Discrete PID control
     """
-    def __init__(self, P, I, D, Z):
+    def __init__(self, P=0.588442472894726, I=0.00582245726162423, D=-313.988863983634, Z=120):
         
         # PID parameters
         
@@ -19,7 +19,7 @@ class PID_Event_Based:
 
        
         # filter coefficient
-        self.N = 0.0780655603066488
+        self.N = 0.00187408707885066
         
         # Initial values
         
@@ -49,14 +49,13 @@ class PID_Event_Based:
         # calculate the control signal
         self.up = self.K*self.error
         self.ud = self.ad*self.ud - self.bd*(current_value - self.y_old)
-        # self.ud = 0
    
         # Control signal
         u_PID = self.ud + self.up + self.ui
         
         # Atuator saturations
-        if u_PID >= 100:
-            u_PID = 100
+        if u_PID >= 1000:
+            u_PID = 1000
         elif u_PID <= 0:
             u_PID = 0
 
