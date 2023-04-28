@@ -1020,7 +1020,7 @@ class Main():
         # DO PBR1
         Labjack1.initI2C(1, 0, 6) #EL OBJETO comunicación LLAMA AL MÉTODO initI2C (TX,RX,DIRECCIÓN)
         Labjack1.sendValueI2C([82], delay=Reponse_time_DO) #EL OBJETO comunicación LLAMA AL MÉTODO sendValueI2C ([COMANDO ASCII]) EN CASO DE NECESITAR OTRA UTILIDAD VER MANUAL DEL SENSOR
-        time.sleep(delay) #POR NADA DEL MUNDO SE PUEDE CAMBIAR ESTE RETARDO (VER MANUAL DEL SENSOR)
+        time.sleep(delay) # Aditional required delay
         
         # This is in case of a error in the comunication
         try:
