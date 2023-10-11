@@ -8,6 +8,7 @@ delay = 1
 
 Response_time_pH = 0.9
 Reponse_time_DO = 0.6
+Response_time_Ezo = 0.3
 
 
 # Adress for calibration
@@ -16,7 +17,15 @@ Reponse_time_DO = 0.6
 # pH PBR3 4
 # DO PBR1 3
 # DO PBR2 2
-# DI PBR3 1
+# DO PBR3 1
+# PMP PBR1 8 Din
+# PMP PBR2 10 Din
+# PMP PBR3 12 Din
+# PMP level PBR1 7
+# PMP level PBR2 9
+# PMP level PBR3 11
+
+
 
 # DO commands
 
@@ -39,21 +48,30 @@ Reponse_time_DO = 0.6
 
 
 Labjack1.initI2C(1, 0, 3) #Adress 
-#comando_PBR = "Cal,high,10"
+#comando_PBR = "Cal,low,4"
 #comando_PBR = "Cal"
 
 #Labjack1.sendValueI2C([ord(character) for character in comando_PBR], num_bytes_to_read=1, delay=Response_time_pH)
 
-# This is in case of a error in the comunication
+
 
 
 #Labjack1.sendValueI2C([ord(character) for character in comando_PBR], num_bytes_to_read=1, delay=0.9)
 #time.sleep(delay) 
+Flag_PMPs=False
+# For PH and DO
+if Flag_PMPs==False:
+    comando_PBR = "R"
+    Labjack1.sendValueI2C([ord(character) for character in comando_PBR], num_bytes_to_read=1, delay=0.9)
+    print(Labjack1.readValueI2C())
 
-comando_PBR = "R"
-Labjack1.sendValueI2C([ord(character) for character in comando_PBR], num_bytes_to_read=1, delay=0.9)
-print(Labjack1.readValueI2C())
+
+# Calibration PMPs
+if Flag_PMPs==True:
+    #Labjack1.sendValueI2C([88], num_bytes_to_read=1, delay=Response_time_Ezo) # X
+    Labjack1.sendValueI2C([ord(character) for character in "D," +  str(25) ], num_bytes_to_read=1, delay=Response_time_Ezo)
+    #Labjack1.sendValueI2C([ord(character) for character in "Cal," +  str(39)], num_bytes_to_read=1, delay=Response_time_Ezo)
+    #Cal,9.8
+
 
 Labjack1.close()
-
-

@@ -115,7 +115,7 @@ class Window_FBR:
         self.lineDO.get_tk_widget().pack(side=tk.LEFT, fill=tk.BOTH,expand=1)
         
         #FIGURA Biomass
-        self.xBiomas.grid(True),self.xBiomas.set_xlabel('$Time$'),self.xBiomas.set_ylabel('$Density$')
+        self.xBiomas.grid(True),self.xBiomas.set_xlabel('$Time$'),self.xBiomas.set_ylabel('$ X (10^9 cells)$')
         self.xBiomas.set_ylim([0, 100])
         self.lineBiomass = FigureCanvasTkAgg(frame_variable_Biomass, tab_Biomass)
         self.lineBiomass.get_tk_widget().pack(side=tk.LEFT, fill=tk.BOTH,expand=1)
@@ -288,9 +288,9 @@ class Main():
         self.PID_temp_PBR3 = PID_Event_Based (P=0.0719593634132244, I=0.0205325079870776, D=-0.584407891678162, Z=self.pid_temperature_executiontime)  
         
         # # Instances ofs PIDs for Ligth
-        self.PID_Light_PBR1 = PID_Discreto ()
-        self.PID_Light_PBR2 = PID_Discreto ()
-        self.PID_Light_PBR3 = PID_Discreto ()
+        # self.PID_Light_PBR1 = PID_Discreto ()
+        # self.PID_Light_PBR2 = PID_Discreto ()
+        # self.PID_Light_PBR3 = PID_Discreto ()
         
         
         # Start the Initial values of the Light
@@ -327,6 +327,13 @@ class Main():
         self.lvl_PBR1=[]
         self.lvl_PBR2=[]
         self.lvl_PBR3=[]
+        
+        
+        self.Biomass_PBR1=[]
+        self.Biomass_PBR2=[]
+        self.Biomass_PBR3=[]
+        
+        self.TimeBiomass=[]
         
         self.Timelvl_PBR1=[]
         self.Timelvl_PBR2=[]
@@ -416,11 +423,26 @@ class Main():
         workbook.close()
         
         
+        
+        
+        ### Create Light Excel Workbook
+        workbook = xlsxwriter.Workbook('Biomass_'+ self.Hours +"_"+ self.today +'.xlsx')
+        bold = workbook.add_format({'bold': True})
+        worksheet = workbook.add_worksheet()
+        worksheet.write('A1', 'Time', bold)
+        worksheet.write('B1', 'Biomass PBR1', bold)
+        worksheet.write('C1', 'Biomass PBR2', bold)
+        worksheet.write('D1', 'Biomass PBR3', bold)
+        # save changes to workbook
+        workbook.close()
+        
+        
         # Variables for start saving excel data
         self.start_row_Ligt_Control = 1
         self.start_row_nivel_monitoring = 1
         self.start_row_IC2_monitoring = 1
         self.start_row_Temperature_Control = 1
+        self.start_row_Biomass_monitoring = 1
         
         # Setpoint
         self.setpoint = 0
@@ -483,12 +505,14 @@ class Main():
             self.label_display_setpoint.config(text="Invalid setpoint value. Please enter a number.")
     
     def MyThread(self, a):
+        
+        
         # Obtén la hora actual
         current_time = datetime.datetime.now()
 
         # Define las horas a las que se ejecutan las tareas
-        task1_hour = 18  # Ejecuta la tarea 1 a las 8:00
-        task2_hour = 8  # Ejecuta la tarea 2 a las 0:00 (medianoche)
+        task1_hour = 16  # Ejecuta la tarea 1 a las 16:00
+        task2_hour = 10  # Ejecuta la tarea 2 a las 10:00 
 
         # Calcula la hora actual y redondea hacia abajo al múltiplo de 16 más cercano
         current_hour = current_time.hour
@@ -503,12 +527,7 @@ class Main():
             Labjack1.sendValue('EIO4', True)  
             #PBR3
             Labjack1.sendValue('EIO6', True)
-            # Reset the controllers
-              
-            self.PID_Light_PBR1.reset()
-            self.PID_Light_PBR2.reset()
-            self.PID_Light_PBR3.reset()
-            
+        
             # Realiza las acciones necesarias para la tarea 1 aquí
 
         # Verifica si es hora de ejecutar la tarea 2
@@ -532,8 +551,9 @@ class Main():
         
         
     
-    def ThreadADRC(self, dt):
-        # print("No hago nada :O")
+    def ThreadADRC(self, dt, N):
+
+        
         # Global self.setpoint
         # Call the ADRC controller instances for PBR1, PBR2, and PBR3
         
@@ -556,6 +576,56 @@ class Main():
         #print(D_PBR2)
         #print(D_PBR3)
         
+        # Plot biomass data
+        
+        # Biomass PBR1
+        voltaje_Biomass_PBR1 = float(Labjack2.readValue('AIN11'))
+        self.wFBR1.xBiomas.clear()
+        self.wFBR1.xBiomas.set_xlabel('$Time$'), self.wFBR1.xBiomas.set_ylabel('$X (10^9 cells)$')
+        self.Biomass_PBR1.append(voltaje_Biomass_PBR1)
+        self.TimeBiomass.append(datetime.datetime.now())
+        self.Biomass_PBR1=self.Biomass_PBR1[-N:]        
+        self.TimeBiomass=self.TimeBiomass[-N:]
+        # Update plot 
+        self.wFBR1.xBiomas.plot(self.TimeBiomass,  self.Biomass_PBR1), self.wFBR1.xBiomas.grid(True)
+        self.wFBR1.lineBiomass.draw()
+        
+        
+               
+        # Biomass PBR2
+        voltaje_Biomass_PBR2 = float(Labjack2.readValue('AIN9'))
+        self.wFBR2.xBiomas.clear()
+        self.wFBR2.xBiomas.set_xlabel('$Time$'), self.wFBR2.xBiomas.set_ylabel('$X (10^9 cells)$')
+        self.Biomass_PBR2.append(voltaje_Biomass_PBR2)
+        self.Biomass_PBR2=self.Biomass_PBR2[-N:]      
+        # Update plot 
+        self.wFBR2.xBiomas.plot(self.TimeBiomass,  self.Biomass_PBR2), self.wFBR2.xBiomas.grid(True)
+        self.wFBR2.lineBiomass.draw()
+          
+
+        
+               
+        # Biomass PBR3
+        voltaje_Biomass_PBR3 = float(Labjack2.readValue('AIN10'))
+        self.wFBR3.xBiomas.clear()
+        self.wFBR3.xBiomas.set_xlabel('$Time$'), self.wFBR3.xBiomas.set_ylabel('$X (10^9 cells)$')
+        self.Biomass_PBR3.append(voltaje_Biomass_PBR3)
+        self.Biomass_PBR3=self.Biomass_PBR3[-N:]        
+        # Update plot 
+        self.wFBR3.xBiomas.plot(self.TimeBiomass,  self.Biomass_PBR3), self.wFBR3.xBiomas.grid(True)
+        self.wFBR3.lineBiomass.draw()
+        
+        
+        
+        # Update Excel ile
+        Time = datetime.datetime.now()
+        Time = time.strftime("%H.%M.%S")
+        self.start_row_Biomass_monitoring += 1
+        Biomass_PBR1=voltaje_Biomass_PBR1
+        Biomass_PBR2=voltaje_Biomass_PBR2
+        Biomass_PBR3=voltaje_Biomass_PBR3
+        self.update_excel_file_Biomass(sheet=self.start_row_Biomass_monitoring,Time=Time, Biomass_PBR1=Biomass_PBR1, Biomass_PBR2=Biomass_PBR2, Biomass_PBR3=Biomass_PBR3 )
+        
          
 # General funtions
     
@@ -565,10 +635,10 @@ class Main():
         
         print('Starting or Resuming Threads')
         N_samples = 100 # Number of elements to be stored
-        
+        self.start_time = time.time() # Global time 
         # Threads FBR
         dt_ADRC = 0.01
-        self.thADRC = continuous_threading.PeriodicThread(dt_ADRC, target=self.ThreadADRC, args=[dt_ADRC])
+        self.thADRC = continuous_threading.PeriodicThread(dt_ADRC, target=self.ThreadADRC, args=[dt_ADRC, N_samples])
         self.th1 = continuous_threading.ContinuousThread(target=self.MyThread, args=[0] ) #Defining the thread as continuos thread in a loop
         self.th2 = continuous_threading.ContinuousThread(target=self.I2C_monitoring) #Defining the thread as continuos thread in a loop
         self.th3 = continuous_threading.PeriodicThread(self.Nivel_executiontime, target=self.nivel_monitoring, args=[N_samples]) #Defining the thread as periodic thread in a loop
@@ -610,6 +680,8 @@ class Main():
         self.wFBR2.__main__(self.tab_FBR2)
         self.wFBR3.__main__(self.tab_FBR3)
         
+        
+        
     def update_excel_file_Light(self, sheet, Time, Intensity_PBR1, Intensity_PBR2, Intensity_PBR3):
         
         # Load the Excel workbook
@@ -618,12 +690,27 @@ class Main():
         worksheet = workbook.active
         # Update a cell value
         worksheet["A" + str(sheet)] = Time
-        worksheet["B" + str(sheet)] = str(Intensity_PBR1)
-        worksheet["C" + str(sheet)] = str(Intensity_PBR2)
-        worksheet["D" + str(sheet)] = str(Intensity_PBR3)
+        worksheet["B" + str(sheet)] = Intensity_PBR1
+        worksheet["C" + str(sheet)] = Intensity_PBR2
+        worksheet["D" + str(sheet)] = Intensity_PBR3
         
         # Save the workbook
         workbook.save('Light_'+ self.Hours +"_"+ self.today +'.xlsx')
+    
+    def update_excel_file_Biomass(self, sheet, Time, Biomass_PBR1, Biomass_PBR2, Biomass_PBR3):
+        
+        # Load the Excel workbook
+        workbook = openpyxl.load_workbook('Biomass_'+ self.Hours +"_"+ self.today +'.xlsx')
+        # Select the active worksheet
+        worksheet = workbook.active
+        # Update a cell value
+        worksheet["A" + str(sheet)] = Time
+        worksheet["B" + str(sheet)] = Biomass_PBR1
+        worksheet["C" + str(sheet)] = Biomass_PBR2
+        worksheet["D" + str(sheet)] = Biomass_PBR3
+        
+        # Save the workbook
+        workbook.save('Biomass_'+ self.Hours +"_"+ self.today +'.xlsx')
     
     def update_excel_file_nivel(self, sheet, Time, Nivel_PBR1, Nivel_PBR2, Nivel_PBR3):
         
@@ -633,9 +720,9 @@ class Main():
         worksheet = workbook.active
         # Update a cell value
         worksheet["A" + str(sheet)] = Time
-        worksheet["B" + str(sheet)] = str(Nivel_PBR1)
-        worksheet["C" + str(sheet)] = str(Nivel_PBR2)
-        worksheet["D" + str(sheet)] = str(Nivel_PBR3)
+        worksheet["B" + str(sheet)] = Nivel_PBR1
+        worksheet["C" + str(sheet)] = Nivel_PBR2
+        worksheet["D" + str(sheet)] = Nivel_PBR3
         
         # Save the workbook
         workbook.save('Nivel_'+ self.Hours +"_"+ self.today +'.xlsx')
@@ -648,9 +735,9 @@ class Main():
         worksheet = workbook.active
         # Update a cell value
         worksheet["A" + str(sheet)] = Time
-        worksheet["B" + str(sheet)] = str(Temperature_PBR1)
-        worksheet["C" + str(sheet)] = str(Temperature_PBR2)
-        worksheet["D" + str(sheet)] = str(Temperature_PBR3)
+        worksheet["B" + str(sheet)] = Temperature_PBR1
+        worksheet["C" + str(sheet)] = Temperature_PBR2
+        worksheet["D" + str(sheet)] = Temperature_PBR3
         
         # Save the workbook
         workbook.save('Temperature_'+ self.Hours +"_"+ self.today +'.xlsx')
@@ -663,12 +750,12 @@ class Main():
         worksheet = workbook.active
         # Update a cell value
         worksheet["A" + str(sheet)] = Time
-        worksheet["B" + str(sheet)] = str(ph_PBR1)
-        worksheet["C" + str(sheet)] = str(ph_PBR2)
-        worksheet["D" + str(sheet)] = str(ph_PBR3)
-        worksheet["E" + str(sheet)] = str(DO_PBR1)
-        worksheet["F" + str(sheet)] = str(DO_PBR2)
-        worksheet["G" + str(sheet)] = str(DO_PBR3)
+        worksheet["B" + str(sheet)] = ph_PBR1
+        worksheet["C" + str(sheet)] = ph_PBR2
+        worksheet["D" + str(sheet)] = ph_PBR3
+        worksheet["E" + str(sheet)] = DO_PBR1
+        worksheet["F" + str(sheet)] = DO_PBR2
+        worksheet["G" + str(sheet)] = DO_PBR3
         
         # Save the workbook
         workbook.save('I2C_'+ self.Hours +"_"+ self.today +'.xlsx')
@@ -741,7 +828,7 @@ class Main():
         
         # Nivel PBR3
         voltaje_Nivel_PBR3 = float(Labjack2.readValue('AIN2'))
-        nivel_real_PBR3 = float(5.8953 * voltaje_Nivel_PBR3 + 2.5354)
+        nivel_real_PBR3 = float(5.8953 * voltaje_Nivel_PBR3 + 2.5354) - 2 # Calibration -2
         self.wFBR3.xLvl.clear()
         self.wFBR3.xLvl.set_xlabel('$Time$'), self.wFBR3.xLvl.set_ylabel('$cm$')
         self.lvl_PBR3.append(nivel_real_PBR3)
@@ -788,6 +875,9 @@ class Main():
         Time = time.strftime("%H.%M.%S")
         self.start_row_nivel_monitoring += 1
         self.update_excel_file_nivel(sheet=self.start_row_nivel_monitoring,Time=Time, Nivel_PBR1=nivel_real_PBR1, Nivel_PBR2=nivel_real_PBR2, Nivel_PBR3=nivel_real_PBR3 )
+        
+        
+        
 
     def temperature_control(self, N):
         #z is the time of execution of the thread
@@ -855,7 +945,7 @@ class Main():
         UPID_Temp_PBR2 = self.PID_temp_PBR2.update(average_last_third_PBR2)
            
         # Write the temperature computed value in the labjack
-        #Labjack1.sendValue('DAC1', np.interp(UPID_Temp_PBR2, [0, 100], [0, 5])) # Interp
+        Labjack1.sendValue('DAC1', np.interp(UPID_Temp_PBR2, [0, 100], [0, 5])) # Interp
         
         # Turn on Cooler
         if Temp_PBR2 > self.wFBR2.Ref_tmp.get(): 
@@ -883,7 +973,7 @@ class Main():
         #print("Medido PBR3", average_last_third_PBR3)
         UPID_Temp_PBR3 = self.PID_temp_PBR3.update(average_last_third_PBR3)
 
-        #Labjack1.sendValue('TDAC2', np.interp(UPID_Temp_PBR3, [0, 100], [0, 5])) # Interp
+        Labjack1.sendValue('TDAC2', np.interp(UPID_Temp_PBR3, [0, 100], [0, 5])) # Interp
         
         # Turn on Cooler
         if Temp_PBR3 > self.wFBR3.Ref_tmp.get(): #VENTILADOR ACTIVACIÓN DIGITAL
@@ -900,36 +990,57 @@ class Main():
     
     def Light_Control(self, N):
         
-        average_last_third_PBR1 = self.get_average(self.avfiltered_Iin_PBR1)
-        average_last_third_PBR2 = self.get_average(self.avfiltered_Iin_PBR2)
-        average_last_third_PBR3 = self.get_average(self.avfiltered_Iin_PBR3)
+        current_time = datetime.datetime.now()
+        current_hour = current_time.hour
         
-        
-        
+        if current_hour >= 16:
+            Time_ = current_hour -16
+        elif current_hour < 10:
+            Time_ = current_hour + 8
+        else:
+            Time_ = 0
         
         # Light Control PBR1
-        # Setpoint
-        self.PID_Light_PBR1.setPoint(self.wFBR1.Ref_luz.get())
-        # Call update function of the PID 
-        PID_Light_PBR1 = self.PID_Light_PBR1.update(average_last_third_PBR1)
-        Labjack1.sendValue('TDAC3', np.interp(PID_Light_PBR1, [0, 1000], [3, 5])) # Interp
+        Maximun_PBR1 = self.wFBR1.Ref_luz.get()*2.7027 + 29.73
+        # Measure 3v and 5V
+        # Light maximal Ecuation Y= Ax + y 
+        Ivar_PBR1_ = Maximun_PBR1* (sin(((Time_ - 18) / 18) * 3.14159))^2
+        # sending this value to show the actual irrandiance
+        self.Intensity_PBR1= Ivar_PBR1_
+        Labjack1.sendValue('TDAC3', np.interp(Ivar_PBR1_, [0, 500], [3, 5])) # Interp
         
         # Light Control PBR2
-        # Setpoint
-        self.PID_Light_PBR2.setPoint(self.wFBR2.Ref_luz.get())
-        # Call update function of the PID 
-        PID_Light_PBR2 = self.PID_Light_PBR2.update(average_last_third_PBR2)
-        Labjack1.sendValue('TDAC4', np.interp(PID_Light_PBR2, [0, 1000], [3, 5])) # Interp
+        Maximun_PBR2 = self.wFBR2.Ref_luz.get()
+        # Measure 3v and 5V
+        # Light maximal Ecuation Y= Ax + y
+        Ivar_PBR2_ = Maximun_PBR2* (sin(((Time_ - 18) / 18) * 3.14159))^2
+        # sending this value to show the actual irrandiance
+        self.Intensity_PBR2= Ivar_PBR2_
+        Labjack1.sendValue('TDAC4', np.interp(Ivar_PBR2_, [0, 500], [3, 5])) # Interp
+        
         
         # Light Control PBR3
-        # Setpoint
-        self.PID_Light_PBR3.setPoint(self.wFBR3.Ref_luz.get())
-        PID_Light_PBR3 = self.PID_Light_PBR3.update(current_value=average_last_third_PBR3)
-        Labjack1.sendValue('TDAC5', np.interp(PID_Light_PBR3, [0, 1000], [3, 5])) # Interp
+        Maximun_PBR3 = self.wFBR3.Ref_luz.get()*0.3125 + 118.75
+        # Measure 3v and 5V
+        # Light maximal Ecuation Y= Ax + y
+        Ivar_PBR3_ = Maximun_PBR3* (sin(((Time_ - 18) / 18) * 3.14159))^2
+        # sending this value to show the actual irrandiance
+        self.Intensity_PBR3= Ivar_PBR3_
+        Labjack1.sendValue('TDAC5', np.interp(Ivar_PBR3_, [0, 500], [3, 5])) # Interp
+        
+        
+        
+        
+        
+        
+        
         
         
     
     def Light_monitoring(self, N):
+        # Computed the elapsed time
+        elapsed_time = time.time() - self.start_time
+        print(f"Elapsed time: {elapsed_time} seconds")
         
         # Append time vector
         self.TimeIin.append(datetime.datetime.now())
@@ -939,7 +1050,8 @@ class Main():
         # For more information about this equation refer to manual of the Sensor S2-141, taking into account that  you have to multiply your readings by 1.25 to account for the immersion effect due to the light refracting when it hits the water
         
         # PBR1
-        self.Intensity_PBR1 = ((Labjack1.readValue('AIN5')-0.399)*100000)*1.25  #Read analoge input
+        # Disable when the irradiance sensor is not able
+        # self.Intensity_PBR1 = ((Labjack1.readValue('AIN5')-0.399)*100000)*1.25  #Read analoge input
         self.wFBR1.xIin.clear()
         self.wFBR1.xIin.grid(True),self.wFBR1.xIin.set_xlabel('$Time$'),self.wFBR1.xIin.set_ylabel('$\mu mol \cdot m^{-2} \cdot s^{-1}$')
         # Append Light vector
@@ -949,7 +1061,8 @@ class Main():
         self.filtered_Iin_PBR1 = self.apply_butterworth_filter(self.Iin_PBR1)
 
         # PBR2
-        self.Intensity_PBR2 = ((Labjack1.readValue('AIN13')-0.399)*100000)*1.25  #Read analoge input
+        # Disable when the irradiance sensor is not able
+        # self.Intensity_PBR2 = ((Labjack1.readValue('AIN13')-0.399)*100000)*1.25  #Read analoge input
         self.wFBR2.xIin.clear()
         self.wFBR2.xIin.grid(True),self.wFBR2.xIin.set_xlabel('$Time$'),self.wFBR2.xIin.set_ylabel('$\mu mol \cdot m^{-2} \cdot s^{-1}$')
         # Append Light vector
@@ -961,7 +1074,8 @@ class Main():
         
         
         # PBR3
-        self.Intensity_PBR3 = ((Labjack1.readValue('AIN9')-0.399)*100000)*1.25 #Read analoge input
+         # Disable when the irradiance sensor is not able
+        # self.Intensity_PBR3 = ((Labjack1.readValue('AIN9')-0.399)*100000)*1.25 #Read analoge input
         self.wFBR3.xIin.clear()
         self.wFBR3.xIin.grid(True),self.wFBR3.xIin.set_xlabel('$Time$'),self.wFBR3.xIin.set_ylabel('$\mu mol \cdot m^{-2} \cdot s^{-1}$')
         # Append Light vector
@@ -1009,6 +1123,9 @@ class Main():
         
     
     def I2C_monitoring(self):
+        # Computed the elapsed time
+        elapsed_time = time.time() - self.start_time
+        print(f"Elapsed time: {elapsed_time} seconds")
    
         delay = 0.2
         Response_time_pH = 0.9
@@ -1018,7 +1135,7 @@ class Main():
         # start monitoring 
         
         # DO PBR1
-        Labjack1.initI2C(1, 0, 6) #EL OBJETO comunicación LLAMA AL MÉTODO initI2C (TX,RX,DIRECCIÓN)
+        Labjack1.initI2C(1, 0, 3) #EL OBJETO comunicación LLAMA AL MÉTODO initI2C (TX,RX,DIRECCIÓN)
         Labjack1.sendValueI2C([82], delay=Reponse_time_DO) #EL OBJETO comunicación LLAMA AL MÉTODO sendValueI2C ([COMANDO ASCII]) EN CASO DE NECESITAR OTRA UTILIDAD VER MANUAL DEL SENSOR
         time.sleep(delay) # Aditional required delay
         
@@ -1052,7 +1169,7 @@ class Main():
     
                 
         # pH PBR1
-        Labjack1.initI2C(1, 0, 3)
+        Labjack1.initI2C(1, 0, 6)
         Labjack1.sendValueI2C([82], delay=Response_time_pH)#114
         
         time.sleep(delay) #POR NADA DEL MUNDO SE PUEDE CAMBIAR ESTE RETARDO (VER MANUAL DEL SENSOR)
@@ -1087,7 +1204,7 @@ class Main():
         self.wFBR1.linepH.draw()
 
         # DO PBR2
-        Labjack1.initI2C(1, 0, 5)
+        Labjack1.initI2C(1, 0, 2)
         Labjack1.sendValueI2C([82], delay=Reponse_time_DO)
         time.sleep(delay)
         # This is in case of a error in the comunication
@@ -1117,7 +1234,7 @@ class Main():
   
         
         # pH PBR2
-        Labjack1.initI2C(1, 0, 2)
+        Labjack1.initI2C(1, 0, 5)
         Labjack1.sendValueI2C([82], delay=Response_time_pH) # Command to read
         time.sleep(delay)
         
@@ -1145,7 +1262,7 @@ class Main():
         
     
         # DO PBR3
-        Labjack1.initI2C( 1, 0, 4)
+        Labjack1.initI2C( 1, 0, 1)
         Labjack1.sendValueI2C([82], delay=Reponse_time_DO)
         time.sleep(delay)
         
@@ -1175,7 +1292,7 @@ class Main():
         self.wFBR3.lineDO.draw()
         
         # pH PBR3
-        Labjack1.initI2C(1, 0, 1)
+        Labjack1.initI2C(1, 0, 4)
         Labjack1.sendValueI2C([82], delay=Response_time_pH) #114
         time.sleep(delay)
         # This is in case of a error in the comunication
@@ -1219,10 +1336,22 @@ class Main():
         self.Dilution_rate_PBR3=80
         
         # Definir el valor del controlador, maximal flow rate is 50.05 ml/min 
-        D_PBR1 = int(np.interp(self.Dilution_rate_PBR1, [0, 100], [0, 50.05]))
-        D_PBR2 = int(np.interp(self.Dilution_rate_PBR2, [0, 100], [0, 50.05]))
-        D_PBR3 = int(np.interp(self.Dilution_rate_PBR3, [0, 100], [0, 50.05])) 
+        #D_PBR1 = int(np.interp(self.Dilution_rate_PBR1, [0, 100], [0, 50.05]))
+        #D_PBR2 = int(np.interp(self.Dilution_rate_PBR2, [0, 100], [0, 50.05]))
+        #D_PBR3 = int(np.interp(self.Dilution_rate_PBR3, [0, 100], [0, 50.05])) 
         
+        # ml/min for dose over time
+        Din_PBR1 = 2
+        Din_PBR2 = 2
+        Din_PBR3 = 2
+        out_PBR1 = 1
+        out_PBR2 = 1
+        out_PBR3 = 1
+        
+        
+            
+        # Constant flow rate DC,[ml/min],[min or *] <cr> [maintain this rate],[for this much time]
+        # Dose over time D,[ml],[min]
         #Convertir a litros por dia 72 listros por dia
         #Reactor 3 litros, D es inverso de dias D = 72/3 = 24 
         
@@ -1234,53 +1363,70 @@ class Main():
         # PBR1
         
         # First stop all the pummps 
+        if elapsed_time >= 2*600:
+            self.start_time = time.time()
+            print("Updatings pumps ")
         
         
-        # Crear el comando con el valor del controlador
-        
-        Labjack1.initI2C(1, 0, 7) 
-        Labjack1.sendValueI2C([88], num_bytes_to_read=1, delay=Response_time_Ezo) # X
-        Labjack1.sendValueI2C([ord(character) for character in "DC," + str(D_PBR1) +",1"], num_bytes_to_read=1, delay=Response_time_Ezo)
-        #print("action PBR1", self.level_Peristaltic_PBR1)
-        
-        
-        # PBR2
-        # Crear el comando con el valor del controlador
-        
-        Labjack1.initI2C(1, 0, 9) 
-        Labjack1.sendValueI2C([88], num_bytes_to_read=1, delay=Response_time_Ezo) # X
-        Labjack1.sendValueI2C([ord(character) for character in "DC," + str(D_PBR2) +",1"], num_bytes_to_read=1, delay=Response_time_Ezo) #EL OBJETO comunicación LLAMA AL MÉTODO sendValueI2C ([COMANDO ASCII]) EN CASO DE NECESITAR OTRA UTILIDAD VER MANUAL DEL SENSOR
-        #print("action PBR2", self.level_Peristaltic_PBR2)
-        
-        #PBR3        
-        # Crear el comando con el valor del controlador
-        
-        Labjack1.initI2C(1, 0, 11) 
-        Labjack1.sendValueI2C([88], num_bytes_to_read=1, delay=Response_time_Ezo) # X
-        Labjack1.sendValueI2C([ord(character) for character in "DC," + str(D_PBR3) +",1"], num_bytes_to_read=1, delay=Response_time_Ezo) #EL OBJETO comunicación LLAMA AL MÉTODO sendValueI2C ([COMANDO ASCII]) EN CASO DE NECESITAR OTRA UTILIDAD VER MANUAL DEL SENSOR
-        #print("action PBR3", self.level_Peristaltic_PBR3)
+            # PBR1
+            # Out
+            #Labjack1.initI2C(1, 0, 7) 
+            #Labjack1.sendValueI2C([88], num_bytes_to_read=1, delay=Response_time_Ezo) # X
+            #Labjack1.sendValueI2C([ord(character) for character in "D," + str(out_PBR1) ], num_bytes_to_read=1, delay=Response_time_Ezo)
+            # In
+            
+            Labjack1.initI2C(1, 0, 8) 
+            Labjack1.sendValueI2C([88], num_bytes_to_read=1, delay=Response_time_Ezo) # X
+            Labjack1.sendValueI2C([ord(character) for character in "D," + str(Din_PBR1) ], num_bytes_to_read=1, delay=Response_time_Ezo)
+            
+
+            
+                        
+            # PBR2
+            # Out
+            #Labjack1.initI2C(1, 0, 9) 
+            #Labjack1.sendValueI2C([88], num_bytes_to_read=1, delay=Response_time_Ezo) # X
+            #Labjack1.sendValueI2C([ord(character) for character in "D," + str(out_PBR2) ], num_bytes_to_read=1, delay=Response_time_Ezo)
+            
+            #In
+            Labjack1.initI2C(1, 0, 10) 
+            Labjack1.sendValueI2C([88], num_bytes_to_read=1, delay=Response_time_Ezo) # X
+            Labjack1.sendValueI2C([ord(character) for character in "D," + str(Din_PBR2) ], num_bytes_to_read=1, delay=Response_time_Ezo)
+            
+            
+            #PBR3        
+            #Out
+            #Labjack1.initI2C(1, 0, 11) 
+            #Labjack1.sendValueI2C([88], num_bytes_to_read=1, delay=Response_time_Ezo) # X
+            #Labjack1.sendValueI2C([ord(character) for character in "D," + str(out_PBR3) ], num_bytes_to_read=1, delay=Response_time_Ezo)
+            
+            #In
+            Labjack1.initI2C(1, 0, 12) 
+            Labjack1.sendValueI2C([88], num_bytes_to_read=1, delay=Response_time_Ezo) # X
+            Labjack1.sendValueI2C([ord(character) for character in "D," + str(Din_PBR3) ], num_bytes_to_read=1, delay=Response_time_Ezo)
+            
         
         # PMP for level
         # Continuous dispensing
         comando_PBR = "D,*"
         
-        Labjack1.initI2C(1, 0, 8) 
-        if (self.level_Peristaltic_PBR1==True):
-            Labjack1.sendValueI2C([ord(character) for character in comando_PBR], num_bytes_to_read=1, delay=Response_time_Ezo)
-        if (self.level_Peristaltic_PBR1==False): 
-            Labjack1.sendValueI2C([88], num_bytes_to_read=1, delay=Response_time_Ezo) # X  stop command  
+        #Labjack1.initI2C(1, 0, 7) #7
+        #if (self.level_Peristaltic_PBR1==True):
+        #    Labjack1.sendValueI2C([ord(character) for character in comando_PBR], num_bytes_to_read=1, delay=Response_time_Ezo)
+        #if (self.level_Peristaltic_PBR1==False): 
+        #    Labjack1.sendValueI2C([88], num_bytes_to_read=1, delay=Response_time_Ezo) # X  stop command  
                        
-        Labjack1.initI2C(1, 0, 10)
-        if (self.level_Peristaltic_PBR2==True):
-            Labjack1.sendValueI2C([ord(character) for character in comando_PBR], num_bytes_to_read=1, delay=Response_time_Ezo)
-        if (self.level_Peristaltic_PBR2==False): 
-            Labjack1.sendValueI2C([88], num_bytes_to_read=1, delay=Response_time_Ezo) # X  stop command  
+        #Labjack1.initI2C(1, 0, 9) #9
+        #if (self.level_Peristaltic_PBR2==True):
+        #    Labjack1.sendValueI2C([ord(character) for character in comando_PBR], num_bytes_to_read=1, delay=Response_time_Ezo)
+        #if (self.level_Peristaltic_PBR2==False): 
+        #    Labjack1.sendValueI2C([88], num_bytes_to_read=1, delay=Response_time_Ezo) # X  stop command  
          
-        Labjack1.initI2C(1, 0, 12)
-        if (self.level_Peristaltic_PBR3==True):
-            Labjack1.sendValueI2C([ord(character) for character in comando_PBR], num_bytes_to_read=1, delay=Response_time_Ezo)
-        if (self.level_Peristaltic_PBR3==False): 
-            Labjack1.sendValueI2C([88], num_bytes_to_read=1, delay=Response_time_Ezo) # X   stop command
+        #Labjack1.initI2C(1, 0, 11) #11
+        #if (self.level_Peristaltic_PBR3==True):
+        #    Labjack1.sendValueI2C([ord(character) for character in comando_PBR], num_bytes_to_read=1, delay=Response_time_Ezo)
+        #if (self.level_Peristaltic_PBR3==False): 
+        #    Labjack1.sendValueI2C([88], num_bytes_to_read=1, delay=Response_time_Ezo) # X   stop command
             
                
         """Ask for the maximal velocities if required 
@@ -1302,6 +1448,14 @@ class Main():
         #Labjack1.sendValueI2C([ord(character) for character in comando_PBR], num_bytes_to_read=1, delay=Response_time_Ezo)
         #max = Labjack1.readMaxI2CEZO()
         #print("Max EZO3",max)
+
+    def task_1_minute(self):
+        # Lógica de la tarea que se ejecuta cada 1 minuto
+        print("Tarea cada 1 minuto")
+
+    def task_2_minute(self):
+        # Lógica de la tarea que se ejecuta cada 30 minutos
+        print("Tarea cada 2 minutos")
    
 # Menus information
        

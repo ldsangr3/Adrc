@@ -1,28 +1,18 @@
-import time
-import datetime
-current_time = datetime.datetime.now()
+from ljm1 import Ljm1
+import numpy as np
 
-        # Define las horas a las que se ejecutan las tareas
-task1_hour = 17  # Ejecuta la tarea 1 a las 8:00
-task2_hour = 10
-
-# Ejecuta la tarea 2 a las 0:00 (medianoche)
-
-current_time = datetime.datetime.now()
-
-current_hour = current_time.hour
-current_minute = current_time.minute
-
-
-print(current_hour)
-        # Verifica si es hora de ejecutar la tarea 1
-if current_hour >= task1_hour:
-    # Aquí va el código para ejecutar la tarea 1
-    print("Ejecutar_ I")
+Labjack1=Ljm1()
+Labjack1.sendValue('EIO0', False)  
+#PBR2
+Labjack1.sendValue('EIO4', False)  
+#PBR3
+Labjack1.sendValue('EIO6', False)
+Labjack1.sendValue('TDAC3', np.interp(300, [0, 500], [3, 5])) # Interp
+      
+Labjack1.sendValue('TDAC4', np.interp(200, [0, 500], [3, 5])) # Interp
+        
+Labjack1.sendValue('TDAC5', np.interp(150, [0, 500], [3, 5])) # Interp
     
-
-# Verifica si es hora de ejecutar la tarea 2
-elif current_hour >= task2_hour:
-    # Aquí va el código para ejecutar la tarea 2
-    print("Ejecutar_ II")
     
+Labjack1.close()
+
