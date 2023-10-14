@@ -20,12 +20,13 @@ from ljm2 import Ljm2 #LabJack2
 import continuous_threading
 import time
 import datetime
+import math # Already imported on LESO observes
 
-from PID import PID_Event_Based
-from PID_Continuo import PID_Realtime
-from PID_Discreto import PID_Discreto
+from simple_pid import PID
+#from PID_Continuo import PID_Realtime
+#from PID_Discreto import PID_Discreto
 from ADRC import ADRC
-from ADRC_II import ADRC_II
+# from ADRC_II import ADRC_II
 from Models import Model_Microalgae
 
 
@@ -283,9 +284,10 @@ class Main():
         
         # Instances ofs PIDs for temperature
         #self.PID_temp_PBR1 = PID_Event_Based (P=10*6.48, I=20, D=2, Z=self.pid_temperature_executiontime)
-        self.PID_temp_PBR1 = PID_Event_Based (P=0.0719593634132244, I=0.0205325079870776, D=-0.584407891678162, Z=self.pid_temperature_executiontime)
-        self.PID_temp_PBR2 = PID_Event_Based (P=0.0719593634132244, I=0.0205325079870776, D=-0.584407891678162, Z=self.pid_temperature_executiontime)
-        self.PID_temp_PBR3 = PID_Event_Based (P=0.0719593634132244, I=0.0205325079870776, D=-0.584407891678162, Z=self.pid_temperature_executiontime)  
+        
+        self.PID_temp_PBR1 = PID (Kp=0.0719593634132244, Ki=0.0205325079870776, Kd=-0.584407891678162, sample_time= self.pid_temperature_executiontime, setpoint=25)
+        self.PID_temp_PBR2 = PID (Kp=0.0719593634132244, Ki=0.0205325079870776, Kd=-0.584407891678162, sample_time= self.pid_temperature_executiontime, setpoint=25)
+        self.PID_temp_PBR3 = PID (Kp=0.0719593634132244, Ki=0.0205325079870776, Kd=-0.584407891678162, sample_time= self.pid_temperature_executiontime, setpoint=25)
         
         # # Instances ofs PIDs for Ligth
         # self.PID_Light_PBR1 = PID_Discreto ()
@@ -343,10 +345,14 @@ class Main():
         self.Iin_PBR2=[]
         self.Iin_PBR3=[]
         
+        
         self.TimeIin=[]
         self.average_Iin_PBR1=[]
         self.average_Iin_PBR2=[]
         self.average_Iin_PBR3=[]
+        self.Intensity_PBR1 = 0
+        self.Intensity_PBR2 = 0
+        self.Intensity_PBR3 = 0
         
         self.TimeTemperature=[]
         
@@ -506,7 +512,7 @@ class Main():
     
     def MyThread(self, a):
         
-        
+        # This thread enable or disable light status
         # Obtén la hora actual
         current_time = datetime.datetime.now()
 
@@ -541,7 +547,7 @@ class Main():
             Labjack1.sendValue('EIO6', False)  # 1
             # Realiza las acciones necesarias para la tarea 2 aquí
         
-        time.sleep(10)
+        time.sleep(60)
 
 
 
@@ -658,7 +664,7 @@ class Main():
         self.th6.start()
             
     def stop_FBR(self):
-        print('Pausing Threads')
+        print('Pausing Threads, please wait !!')
         self.thADRC.stop()
         print('Pausing ADRC Thread')
         self.th1.stop()
@@ -907,12 +913,14 @@ class Main():
         # Control temp PBR1
         
         # Setpoint
-        self.PID_temp_PBR1.setPoint(self.wFBR1.Ref_tmp.get())
+        self.PID_temp_PBR1.setpoint = self.wFBR1.Ref_tmp.get()
         # Call update function of the PID and send the value of the actual temperature
         # Control_Nivel on/off simply
         # First computed the average of the last elements of the vectors
         average_last_third_PBR1 = self.get_average_of_last_third(filtered_temp_PBR1, N)
-        UPID_Temp_PBR1 = self.PID_temp_PBR1.update(average_last_third_PBR1)
+        UPID_Temp_PBR1 = self.PID_temp_PBR1(average_last_third_PBR1)
+        
+        # print("Signal control PBR1", UPID_Temp_PBR1, "Medido", average_last_third_PBR1)
         
         # Write the temperature computed value in the labjack
         Labjack1.sendValue('DAC0', np.interp(UPID_Temp_PBR1, [0, 100], [0, 5])) # Interp
@@ -938,12 +946,13 @@ class Main():
         # Control temp PBR2
         
         # Setpoint
-        self.PID_temp_PBR2.setPoint(self.wFBR2.Ref_tmp.get())
+        self.PID_temp_PBR2.setpoint = self.wFBR2.Ref_tmp.get()
         # Call update function of the PID and send the value of the actual temperature
         
         average_last_third_PBR2 = self.get_average_of_last_third(filtered_temp_PBR2, N)
-        UPID_Temp_PBR2 = self.PID_temp_PBR2.update(average_last_third_PBR2)
-           
+        UPID_Temp_PBR2 = self.PID_temp_PBR2(average_last_third_PBR2)
+        # print("Signal control PBR2", UPID_Temp_PBR1, "Medido", average_last_third_PBR2)  
+        
         # Write the temperature computed value in the labjack
         Labjack1.sendValue('DAC1', np.interp(UPID_Temp_PBR2, [0, 100], [0, 5])) # Interp
         
@@ -967,12 +976,13 @@ class Main():
         # Control temp PBR3
         
         # Setpoint
-        self.PID_temp_PBR3.setPoint(self.wFBR3.Ref_tmp.get())
+        self.PID_temp_PBR3.setpoint = self.wFBR3.Ref_tmp.get()
         # Call update function of the PID and send the value of the actual temperature
         average_last_third_PBR3 = self.get_average_of_last_third(filtered_temp_PBR3, N)
         #print("Medido PBR3", average_last_third_PBR3)
-        UPID_Temp_PBR3 = self.PID_temp_PBR3.update(average_last_third_PBR3)
-
+        UPID_Temp_PBR3 = self.PID_temp_PBR3(average_last_third_PBR3)
+        # print("Signal control PBR3", UPID_Temp_PBR3, "Medido", average_last_third_PBR3)
+        
         Labjack1.sendValue('TDAC2', np.interp(UPID_Temp_PBR3, [0, 100], [0, 5])) # Interp
         
         # Turn on Cooler
@@ -992,7 +1002,7 @@ class Main():
         
         current_time = datetime.datetime.now()
         current_hour = current_time.hour
-        
+        # Chnage acording to Dark/Light cycles
         if current_hour >= 16:
             Time_ = current_hour -16
         elif current_hour < 10:
@@ -1000,35 +1010,49 @@ class Main():
         else:
             Time_ = 0
         
+        # print("time", Time_)
+        schedule = abs(sin(((Time_ - 18) / 18) * 3.14159))
         # Light Control PBR1
-        Maximun_PBR1 = self.wFBR1.Ref_luz.get()*2.7027 + 29.73
+        Maximun_PBR1 = self.wFBR1.Ref_luz.get()
         # Measure 3v and 5V
         # Light maximal Ecuation Y= Ax + y 
-        Ivar_PBR1_ = Maximun_PBR1* (sin(((Time_ - 18) / 18) * 3.14159))^2
+        # Ivar_PBR1_ = Maximun_PBR1* schedule**2
+        Ivar_PBR1_ = Maximun_PBR1*schedule
         # sending this value to show the actual irrandiance
         self.Intensity_PBR1= Ivar_PBR1_
-        Labjack1.sendValue('TDAC3', np.interp(Ivar_PBR1_, [0, 500], [3, 5])) # Interp
+        #print("maximun PBR1", Maximun_PBR1 )
+        #print("PBR1", schedule**2 )
         
+        #Labjack1.sendValue('TDAC3', np.interp(Ivar_PBR1_, [0, 500], [3.5, 5])) # Interp
+        Labjack1.sendValue('TDAC3', 3E-07*Ivar_PBR1_**3 - 6E-5*Ivar_PBR1_**2 + 0.0089*Ivar_PBR1_ + 3.441) # Interp
+        #print("valor enviado PBR1", 3E-07*Ivar_PBR1_**3 - 6E-5*Ivar_PBR1_**2 + 0.0089*Ivar_PBR1_ + 3.441)
         # Light Control PBR2
         Maximun_PBR2 = self.wFBR2.Ref_luz.get()
         # Measure 3v and 5V
         # Light maximal Ecuation Y= Ax + y
-        Ivar_PBR2_ = Maximun_PBR2* (sin(((Time_ - 18) / 18) * 3.14159))^2
+        # Ivar_PBR2_ = Maximun_PBR2* schedule**2
+        Ivar_PBR2_ = Maximun_PBR2*schedule
         # sending this value to show the actual irrandiance
         self.Intensity_PBR2= Ivar_PBR2_
-        Labjack1.sendValue('TDAC4', np.interp(Ivar_PBR2_, [0, 500], [3, 5])) # Interp
-        
+        # print("maximun PBR2", Maximun_PBR2 )
+        # print("PBR2", schedule**2 )
+        # Labjack1.sendValue('TDAC4', np.interp(Ivar_PBR2_, [0, 500], [3.5, 5])) # Interp
+        Labjack1.sendValue('TDAC4', 4E-07*Ivar_PBR2_**3 - 1E-4*Ivar_PBR2_**2 + 0.0115*Ivar_PBR2_ + 3.4654)
+        # print("valor enviado PBR2", 4E-07*Ivar_PBR2_**3 - 1E-4*Ivar_PBR2_**2 + 0.0115*Ivar_PBR2_ + 3.4654)
         
         # Light Control PBR3
-        Maximun_PBR3 = self.wFBR3.Ref_luz.get()*0.3125 + 118.75
+        Maximun_PBR3 = self.wFBR3.Ref_luz.get()
         # Measure 3v and 5V
         # Light maximal Ecuation Y= Ax + y
-        Ivar_PBR3_ = Maximun_PBR3* (sin(((Time_ - 18) / 18) * 3.14159))^2
+        # Ivar_PBR3_ = Maximun_PBR3* schedule**2
+        Ivar_PBR3_ = Maximun_PBR3*schedule
         # sending this value to show the actual irrandiance
         self.Intensity_PBR3= Ivar_PBR3_
-        Labjack1.sendValue('TDAC5', np.interp(Ivar_PBR3_, [0, 500], [3, 5])) # Interp
-        
-        
+        # print("maximun PBR3", Maximun_PBR3 )
+        # print("PBR3", schedule**2 )
+        # Labjack1.sendValue('TDAC5', np.interp(Ivar_PBR3_, [0, 500], [3.5, 5])) # Interp
+        Labjack1.sendValue('TDAC5', 2E-07*Ivar_PBR3_**3 - 5E-5*Ivar_PBR3_**2 + 0.0086*Ivar_PBR3_ + 3.4403) # Interp
+        # print("valor enviado PBR3", 2E-07*Ivar_PBR3_**3 - 5E-5*Ivar_PBR3_**2 + 0.0086*Ivar_PBR3_ + 3.4403)
         
         
         
@@ -1040,7 +1064,7 @@ class Main():
     def Light_monitoring(self, N):
         # Computed the elapsed time
         elapsed_time = time.time() - self.start_time
-        print(f"Elapsed time: {elapsed_time} seconds")
+        # print(f"Elapsed time: {elapsed_time} seconds")
         
         # Append time vector
         self.TimeIin.append(datetime.datetime.now())
@@ -1058,7 +1082,7 @@ class Main():
         self.Iin_PBR1.append(self.Intensity_PBR1)
         # Limits vector to have 20 elements
         self.Iin_PBR1=self.Iin_PBR1[-N:] 
-        self.filtered_Iin_PBR1 = self.apply_butterworth_filter(self.Iin_PBR1)
+        
 
         # PBR2
         # Disable when the irradiance sensor is not able
@@ -1069,12 +1093,12 @@ class Main():
         self.Iin_PBR2.append(self.Intensity_PBR2)
         # Limits vector to have 20 elements
         self.Iin_PBR2=self.Iin_PBR2[-N:] 
-        self.filtered_Iin_PBR2 = self.apply_butterworth_filter(self.Iin_PBR2)
+
         
         
         
         # PBR3
-         # Disable when the irradiance sensor is not able
+        # Disable when the irradiance sensor is not able
         # self.Intensity_PBR3 = ((Labjack1.readValue('AIN9')-0.399)*100000)*1.25 #Read analoge input
         self.wFBR3.xIin.clear()
         self.wFBR3.xIin.grid(True),self.wFBR3.xIin.set_xlabel('$Time$'),self.wFBR3.xIin.set_ylabel('$\mu mol \cdot m^{-2} \cdot s^{-1}$')
@@ -1082,11 +1106,17 @@ class Main():
         self.Iin_PBR3.append(self.Intensity_PBR3)
         # Limits vector to have 20 elements
         self.Iin_PBR3=self.Iin_PBR3[-N:] 
-        self.filtered_Iin_PBR3 = self.apply_butterworth_filter(self.Iin_PBR3)       
+               
         
  
         
-        # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+        ######################################################################
+        # Activate this section in case of wanna filter the data acquire of a sensor
+        self.filtered_Iin_PBR1 = self.apply_butterworth_filter(self.Iin_PBR1)
+        self.filtered_Iin_PBR2 = self.apply_butterworth_filter(self.Iin_PBR2)
+        self.filtered_Iin_PBR3 = self.apply_butterworth_filter(self.Iin_PBR3)
+        
+        
         self.avfiltered_Iin_PBR1 =self.moving_average_filter(self.Iin_PBR1, 3)
         self.avfiltered_Iin_PBR2 =self.moving_average_filter(self.Iin_PBR2, 3)
         self.avfiltered_Iin_PBR3 =self.moving_average_filter(self.Iin_PBR3, 3)
@@ -1094,24 +1124,27 @@ class Main():
         self.average_Iin_PBR1.append(self.get_average(self.avfiltered_Iin_PBR1)) 
         self.average_Iin_PBR2.append(self.get_average(self.avfiltered_Iin_PBR2)) 
         self.average_Iin_PBR3.append(self.get_average(self.avfiltered_Iin_PBR3)) 
-        
+        ######################################################################
         self.average_Iin_PBR1 = self.average_Iin_PBR1[-N:]
         self.average_Iin_PBR2 = self.average_Iin_PBR2[-N:]
         self.average_Iin_PBR3 = self.average_Iin_PBR3[-N:]
         
-        #####################################################################
+        ######################################################################
         
         #### plot graphs
-        self.wFBR1.xIin.plot(self.TimeIin, self.average_Iin_PBR1)
+        # self.wFBR1.xIin.plot(self.TimeIin, self.average_Iin_PBR1)
+        self.wFBR1.xIin.plot(self.TimeIin, self.Iin_PBR1)
         self.wFBR1.xIin.set_ylim([0, 600])
         self.wFBR1.lineIin.draw()
         
-        self.wFBR2.xIin.plot(self.TimeIin, self.average_Iin_PBR2)
+        # self.wFBR2.xIin.plot(self.TimeIin, self.average_Iin_PBR2)
+        self.wFBR2.xIin.plot(self.TimeIin, self.Iin_PBR2)
         self.wFBR2.xIin.set_ylim([0, 600])
         self.wFBR2.lineIin.draw()
         
         self.wFBR3.xIin.set_ylim([0, 600])
-        self.wFBR3.xIin.plot(self.TimeIin, self.average_Iin_PBR3)
+        # self.wFBR3.xIin.plot(self.TimeIin, self.average_Iin_PBR3)
+        self.wFBR3.xIin.plot(self.TimeIin, self.Iin_PBR3)
         self.wFBR3.lineIin.draw()
         
         # Update excel File
@@ -1125,7 +1158,7 @@ class Main():
     def I2C_monitoring(self):
         # Computed the elapsed time
         elapsed_time = time.time() - self.start_time
-        print(f"Elapsed time: {elapsed_time} seconds")
+        # print(f"Elapsed time: {elapsed_time} seconds")
    
         delay = 0.2
         Response_time_pH = 0.9
@@ -1499,7 +1532,7 @@ class Main():
         Labjack1.sendValue('EIO1', False)
         Labjack1.sendValue('EIO2', False)        
         Labjack1.sendValue('TDAC3',0)
-        Labjack1.sendValue('DAC0',0)
+        Labjack1.sendValue('DAC0',0) 
         Labjack1.sendValue('CIO1',0)
         Labjack2.sendValue('DAC0',0)
         Labjack2.sendValue('DAC1',0)
@@ -1521,7 +1554,7 @@ class Main():
         Labjack1.sendValue('CIO3', 0)
         Labjack2.sendValue('TDAC2', 0)
         Labjack2.sendValue('TDAC3', 0)
-        print("Ending program")
+        print("Closing the program, please wait !!!!")
         Labjack1.close()
         Labjack2.close()
 
