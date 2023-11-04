@@ -6,7 +6,7 @@ import tkinter as tk #TKINTER ES PARA INTERFAZ GRÁFICA
 from tkinter import ttk # TTK
 
 
-
+import schedule
 import matplotlib.pyplot as plt #GRAHP LIBRARY
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg #GUI CANVAS
 from scipy.signal import butter, lfilter
@@ -642,6 +642,7 @@ class Main():
         print('Starting or Resuming Threads')
         N_samples = 100 # Number of elements to be stored
         self.start_time = time.time() # Global time 
+        self.start_time_II = time.time() # Global time 
         # Threads FBR
         dt_ADRC = 0.01
         self.thADRC = continuous_threading.PeriodicThread(dt_ADRC, target=self.ThreadADRC, args=[dt_ADRC, N_samples])
@@ -651,7 +652,7 @@ class Main():
         self.th4 = continuous_threading.PeriodicThread(self.Light_executiontime, target=self.Light_monitoring, args=[N_samples]) #Defining the thread as periodic thread in a loop
         self.th5 = continuous_threading.PeriodicThread(self.pid_temperature_executiontime, target=self.temperature_control, args=[N_samples]) #Defining the thread as periodic thread in a loop
         self.th6 = continuous_threading.PeriodicThread(self.Light_Control_executiontime, target=self.Light_Control, args=[N_samples]) 
-        
+       
         # self.th.daemon = True # Set thread to daemon
         #print(self.th.is_running)
         #if self.th.is_running == False:
@@ -1062,9 +1063,7 @@ class Main():
         
     
     def Light_monitoring(self, N):
-        # Computed the elapsed time
-        elapsed_time = time.time() - self.start_time
-        # print(f"Elapsed time: {elapsed_time} seconds")
+ 
         
         # Append time vector
         self.TimeIin.append(datetime.datetime.now())
@@ -1154,10 +1153,25 @@ class Main():
         self.update_excel_file_Light(sheet=self.start_row_Ligt_Control,Time=Time, Intensity_PBR1=self.Intensity_PBR1, Intensity_PBR2=self.Intensity_PBR2, Intensity_PBR3=self.Intensity_PBR3)
         
         
+    def tarea_diaria(self, Diluton_perday, Response_time_Ezo):
+        Extraction_V = Diluton_perday*3000
+        Labjack1.initI2C(1, 0, 7) 
+        Labjack1.sendValueI2C([88], num_bytes_to_read=1, delay=Response_time_Ezo) # X
+        Labjack1.sendValueI2C([ord(character) for character in "D," + str(Extraction_V) ], num_bytes_to_read=1, delay=Response_time_Ezo)
+        
+        Labjack1.initI2C(1, 0, 9) 
+        Labjack1.sendValueI2C([88], num_bytes_to_read=1, delay=Response_time_Ezo) # X
+        Labjack1.sendValueI2C([ord(character) for character in "D," + str(Extraction_V) ], num_bytes_to_read=1, delay=Response_time_Ezo)
+        
+        Labjack1.initI2C(1, 0, 11) 
+        Labjack1.sendValueI2C([88], num_bytes_to_read=1, delay=Response_time_Ezo) # X
+        Labjack1.sendValueI2C([ord(character) for character in "D," + str(Extraction_V) ], num_bytes_to_read=1, delay=Response_time_Ezo)
+
     
     def I2C_monitoring(self):
         # Computed the elapsed time
         elapsed_time = time.time() - self.start_time
+        elapsed_time_II = time.time() - self.start_time_II
         # print(f"Elapsed time: {elapsed_time} seconds")
    
         delay = 0.2
@@ -1374,9 +1388,13 @@ class Main():
         #D_PBR3 = int(np.interp(self.Dilution_rate_PBR3, [0, 100], [0, 50.05])) 
         
         # ml/min for dose over time
-        Din_PBR1 = 2
-        Din_PBR2 = 2
-        Din_PBR3 = 2
+        Diluton_perday = 0.04
+        Dilution = (Diluton_perday*3000) *3600 / 86400
+        # Interrupcion each 
+        Base = 4 # daily evaporation
+        Din_PBR1 = Base + Dilution
+        Din_PBR2 = Base + Dilution
+        Din_PBR3 = Base + Dilution
         out_PBR1 = 1
         out_PBR2 = 1
         out_PBR3 = 1
@@ -1396,7 +1414,7 @@ class Main():
         # PBR1
         
         # First stop all the pummps 
-        if elapsed_time >= 2*600:
+        if elapsed_time >= 6*600:
             self.start_time = time.time()
             print("Updatings pumps ")
         
@@ -1438,6 +1456,10 @@ class Main():
             Labjack1.sendValueI2C([88], num_bytes_to_read=1, delay=Response_time_Ezo) # X
             Labjack1.sendValueI2C([ord(character) for character in "D," + str(Din_PBR3) ], num_bytes_to_read=1, delay=Response_time_Ezo)
             
+        if elapsed_time_II >= 60*60*24:
+            self.start_time_II = time.time()
+            self.tarea_diaria(self, Diluton_perday=Diluton_perday, Response_time_Ezo=Response_time_Ezo)
+   
         
         # PMP for level
         # Continuous dispensing
@@ -1564,6 +1586,8 @@ if __name__ == "__main__":
     main = Main()  # intance of main
     main.main()    # call method main of main class
     main.run()     # call mainloop of the wimdows
+    
+    
     
 
     
